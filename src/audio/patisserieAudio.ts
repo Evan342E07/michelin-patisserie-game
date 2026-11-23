@@ -100,7 +100,7 @@ class PatisserieAudioEngine {
   private ambianceGain: GainNode | null = null;
   private ambianceExtraNodes: AudioNode[] = [];
   private ambianceIntervalId: number | null = null;
-  private ambianceEnabled = false;
+  private ambianceEnabled = true;
   private resumePromise: Promise<void> | null = null;
   private activeHarpStop: (() => void) | null = null;
 
@@ -259,8 +259,13 @@ class PatisserieAudioEngine {
     const ctx = this.ensureContext(true);
     if (ctx) {
       const ready = await this.resumeIfNeeded(ctx, true);
-      if (ready && this.bgmEnabled && !this.muted && !this.bgmSource && !this.bgmPendingTrack) {
-        void this.startBgmLoop(this.bgmTrack, 1.0);
+      if (ready && !this.muted) {
+        if (this.bgmEnabled && !this.bgmSource && !this.bgmPendingTrack) {
+          void this.startBgmLoop(this.bgmTrack, 1.0);
+        }
+        if (this.ambianceEnabled && !this.ambianceNode) {
+          this.startAmbianceLoop();
+        }
       }
     }
   }

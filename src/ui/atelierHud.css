@@ -2453,3 +2453,51 @@
   height: 4px;
   cursor: pointer;
 }
+
+/* 横屏体验按钮与手机双区触控操作指引 */
+.landscape-hint-btn {
+  width: auto !important;
+  padding: 0 7px;
+  gap: 3px;
+  color: #7c4f15;
+  background: linear-gradient(180deg, #fdf3d7 0%, #f5e2ae 100%);
+  border-color: rgba(184, 130, 52, 0.52);
+}
+
+.landscape-hint-text {
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .landscape-hint-btn {
+    padding: 0 5px;
+  }
+  .landscape-hint-text {
+    font-size: 9.5px;
+  }
+}
+
+@media (max-height: 540px) and (orientation: landscape) {
+  .landscape-hint-btn,
+  .mobile-touch-hint {
+    display: none;
+  }
+}
+
+.mobile-touch-hint {
+  display: none;
+  font-size: 9.5px;
+  line-height: 1.2;
+  color: var(--salon-charcoal-soft);
+  text-align: center;
+  opacity: 0.88;
+  letter-spacing: 0.02em;
+}
+
+@media (pointer: coarse), (max-width: 860px) {
+  .mobile-touch-hint {
+    display: block;
+  }
+}

@@ -243,11 +243,42 @@ const ConservatoryFilmGradeShader = {
   `,
 };
 
+// 在进入 UnrealBloomPass 前执行 HDR NaN/Inf 清理与安全峰值钳位，防止金属各向异性高光炸出 4 黑点过曝方斑及 HalfFloat 黑屏感染
+const HdrSanitizeShader = {
+  name: 'HdrSanitizeShader',
+  uniforms: {
+    tDiffuse: { value: null as THREE.Texture | null },
+    uMaxLuma: { value: 2.6 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uMaxLuma;
+    varying vec2 vUv;
+    void main() {
+      vec4 tex = texture2D(tDiffuse, vUv);
+      vec3 c = tex.rgb;
+      if (any(isnan(c)) || any(isinf(c))) {
+        c = vec3(0.0);
+      }
+      c = clamp(c, vec3(0.0), vec3(uMaxLuma));
+      gl_FragColor = vec4(c, clamp(tex.a, 0.0, 1.0));
+    }
+  `,
+};
+
 interface PostPipeline {
   composer: EffectComposer;
   renderPass: RenderPass;
   outlinePass: StylizedOutlinePass;
   bokehPass: AtelierBokehPass;
+  sanitizePass: ShaderPass;
   bloomPass: UnrealBloomPass;
   filmPass: ShaderPass;
   outputPass: OutputPass;
@@ -256,21 +287,21 @@ interface PostPipeline {
 }
 
 /**
- * 高清锐利 + 核显兼顾的吉卜力绘本渲染管线：
+ * 高清锐利 + 手机端无黑闪、无过曝的吉卜力绘本渲染管线：
  * - 跟随 Canvas DPR（最高 1.5x）全像素渲染与 1.0x StylizedOutlinePass 锐利细描边
- * - SMAAPass 锐利抗锯齿（告别 FXAA 抹糊画质）
- * - 高阈值 0.98 轻量级 Bloom，只让真正的高光灯笼与散光尘埃微粒发光，不模糊墙面与植物
- * - 切后台或闲置超过 5 秒自动降频释放桌面与 Antigravity GPU 资源
+ * - SMAAPass 锐利抗锯齿
+ * - 进入 Bloom 前执行 HdrSanitizeShader 拦截任何 NaN/Inf 爆斑，配合温和阈值 1.24 避免金属与桌布刺眼过曝
+ * - 取消跳帧不渲染逻辑，彻底杜绝 preserveDrawingBuffer:false 下导致的周期性黑屏闪烁
  */
 export const AtelierPostProcessing: React.FC<AtelierPostProcessingProps> = ({
   enabled,
-  bloomStrength = 0.20,
-  bloomRadius = 0.52,
-  bloomThreshold = 0.98,
+  bloomStrength = 0.085,
+  bloomRadius = 0.34,
+  bloomThreshold = 1.24,
   vignetteDarkness = 0.08,
-  highlightWarmth = 0.40,
+  highlightWarmth = 0.34,
   aoIntensity = 1.85,
-  dofMaxBlur = 0.0026,
+  dofMaxBlur = 0.0024,
 }) => {
   const { gl, scene, camera, size } = useThree();
   const storeEnabled = useGameStore((s) => s.postProcessingEnabled);
@@ -347,7 +378,9 @@ export const AtelierPostProcessing: React.FC<AtelierPostProcessingProps> = ({
       maxblur: dofMaxBlur,
     });
 
-    // 高阈值 0.98 清晰泛光：只为强日光束、灯笼和空气散光微光粒子增添光晕，保持建筑木纹与桌布 100% 锐利高清
+    const sanitizePass = new ShaderPass(HdrSanitizeShader);
+
+    // 柔和防过曝泛光：拦截 NaN 后仅对温和亮斑柔光，保持金属器皿与桌面不刺眼
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(Math.max(128, Math.floor(pxW * 0.5)), Math.max(128, Math.floor(pxH * 0.5))),
       bloomStrength,
@@ -366,6 +399,7 @@ export const AtelierPostProcessing: React.FC<AtelierPostProcessingProps> = ({
     composer.addPass(renderPass);
     composer.addPass(outlinePass);
     composer.addPass(bokehPass);
+    composer.addPass(sanitizePass);
     composer.addPass(bloomPass);
     composer.addPass(filmPass);
     composer.addPass(outputPass);
@@ -383,6 +417,7 @@ export const AtelierPostProcessing: React.FC<AtelierPostProcessingProps> = ({
       renderPass,
       outlinePass,
       bokehPass,
+      sanitizePass,
       bloomPass,
       filmPass,
       outputPass,
@@ -396,6 +431,7 @@ export const AtelierPostProcessing: React.FC<AtelierPostProcessingProps> = ({
       renderPass.dispose();
       outlinePass.dispose();
       bokehPass.dispose();
+      sanitizePass.dispose();
       bloomPass.dispose();
       filmPass.dispose();
       outputPass.dispose();
@@ -442,14 +478,11 @@ export const AtelierPostProcessing: React.FC<AtelierPostProcessingProps> = ({
       return;
     }
 
-    // 当页面切后台/失焦、或玩家静止无操作超过 5 秒时，自动降频至 10 FPS 释放核显资源（不阻塞 Electron / Antigravity UI 打字！）
-    const now = performance.now();
-    const idleMs = now - lastInputTimeRef.current;
-    const isHidden = typeof document !== 'undefined' && document.hidden;
-    if ((isHidden || idleMs > 5000) && frameCounterRef.current > 24 && now - lastRenderTimeRef.current < 95) {
+    // 页面完全隐藏时跳过，但在可见状态下每帧必定输出 composer.render，防止 preserveDrawingBuffer:false 下黑屏闪烁
+    if (typeof document !== 'undefined' && document.hidden) {
       return;
     }
-    lastRenderTimeRef.current = now;
+    lastRenderTimeRef.current = performance.now();
 
     const storeState = useGameStore.getState();
 

@@ -270,6 +270,7 @@ export interface PatisserieGameState {
   setPostProcessingEnabled: (enabled: boolean) => void;
   setInteractingWithProp: (active: boolean) => void;
   setCameraOverride: (mode: CameraPreset) => void;
+  cameraRecenterCounter: number;
   clearJudgment: () => void;
 
   // Step 1 Actions
@@ -435,6 +436,7 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
   postProcessingEnabled: true,
   isInteractingWithProp: false,
   cameraOverride: 'station',
+  cameraRecenterCounter: 0,
   stepScores: { ...INITIAL_SCORES },
   stepCompleted: { ...INITIAL_COMPLETED },
   stepFailures: {},
@@ -546,7 +548,11 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
 
   setInteractingWithProp: (active) => set({ isInteractingWithProp: active }),
 
-  setCameraOverride: (mode) => set({ cameraOverride: mode }),
+  setCameraOverride: (mode) =>
+    set((s) => ({
+      cameraOverride: mode,
+      cameraRecenterCounter: s.cameraRecenterCounter + 1,
+    })),
 
   clearJudgment: () => set({ lastJudgment: null }),
 

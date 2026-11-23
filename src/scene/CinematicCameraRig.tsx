@@ -86,12 +86,13 @@ function computeAdaptiveFov(baseFov: number, width: number, height: number): num
 }
 
 export const CinematicCameraRig: React.FC = () => {
-  const { camera, size } = useThree();
+  const { camera, gl, size } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const [isGliding, setIsGliding] = useState(false);
 
   const currentStep = useGameStore((s) => s.currentStep);
   const cameraOverride = useGameStore((s) => s.cameraOverride);
+  const cameraRecenterCounter = useGameStore((s) => s.cameraRecenterCounter);
   const isInteractingWithProp = useGameStore((s) => s.isInteractingWithProp);
   const isChilling = useGameStore((s) => s.isChilling);
   const isExploded = useGameStore((s) => s.explodeTarget > 0.25);
@@ -136,6 +137,25 @@ export const CinematicCameraRig: React.FC = () => {
       }),
     [currentStep, cameraOverride, isChilling, isExploded, isSliced]
   );
+
+  // 手机触控左移右转：左半屏单指拖移镜头 (PAN)，右半屏单指旋转视角 (ROTATE)，双指捏合缩放平移
+  useEffect(() => {
+    const dom = gl.domElement;
+    const onTouchPointerDown = (e: PointerEvent) => {
+      const ctrl = controlsRef.current;
+      if (!ctrl) return;
+      if (e.pointerType === 'touch') {
+        const rect = dom.getBoundingClientRect();
+        const isLeftZone = e.clientX < rect.left + rect.width * 0.45;
+        ctrl.touches.ONE = isLeftZone ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE;
+        ctrl.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+      }
+    };
+    dom.addEventListener('pointerdown', onTouchPointerDown, { capture: true, passive: true });
+    return () => {
+      dom.removeEventListener('pointerdown', onTouchPointerDown, { capture: true });
+    };
+  }, [gl]);
 
   // Synchronously lock OrbitControls during 3D prop drags OR active station-switch glides
   useEffect(() => {
@@ -200,7 +220,7 @@ export const CinematicCameraRig: React.FC = () => {
     prevBreathOffsetRef.current.set(0, 0, 0);
     celebrationImpulseTimerRef.current = 0;
     prevCelebrationYRef.current = 0;
-  }, [activeShot, camera]);
+  }, [activeShot, camera, cameraRecenterCounter]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -366,6 +386,9 @@ export const CinematicCameraRig: React.FC = () => {
       enabled={!isInteractingWithProp && !isGliding}
       enableDamping
       dampingFactor={0.06}
+      screenSpacePanning
+      panSpeed={0.95}
+      rotateSpeed={0.82}
       minDistance={activeShot.minDistance}
       maxDistance={activeShot.maxDistance}
       maxPolarAngle={activeShot.maxPolarAngle}

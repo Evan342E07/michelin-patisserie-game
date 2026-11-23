@@ -209,6 +209,14 @@ const SvgVinylDisc: React.FC = () => (
   </svg>
 );
 
+const SvgRotateLandscape: React.FC = () => (
+  <svg viewBox="0 0 18 18" width="13" height="13" className="cottage-svg-icon" aria-hidden="true">
+    <rect x="2.2" y="5.2" width="13.6" height="8.4" rx="1.8" fill="none" stroke="currentColor" strokeWidth="1.35" />
+    <path d="M5.5 3.1A5.2 5.2 0 0 1 13 3.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    <path d="M13.5 2.1V4.1H11.5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const SvgResetLoop: React.FC = () => (
   <svg viewBox="0 0 18 18" width="13" height="13" className="cottage-svg-icon" aria-hidden="true">
     <path
@@ -849,6 +857,29 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
     [setSelectedFlavor, onFlavorChange]
   );
 
+  const handleLandscapeModeClick = useCallback(async () => {
+    patisserieAudio.playSoftUiTick();
+    try {
+      const rootEl = document.documentElement;
+      if (!document.fullscreenElement && rootEl.requestFullscreen) {
+        await rootEl.requestFullscreen();
+      }
+      const orient = screen.orientation as unknown as { lock?: (mode: string) => Promise<void> };
+      if (orient && typeof orient.lock === 'function') {
+        await orient.lock('landscape');
+        return;
+      }
+    } catch {
+      // 微信/iOS 内置浏览器不支持脚本强锁横屏，给出清晰人工横握指引
+    }
+    setEasterToast({
+      icon: '📱',
+      message: '已适配影院横屏模式：关闭手机「竖屏锁定」后横握即可自动切换！',
+    });
+    if (easterTimerRef.current !== null) window.clearTimeout(easterTimerRef.current);
+    easterTimerRef.current = window.setTimeout(() => setEasterToast(null), 4200);
+  }, []);
+
   const handleOvenRetry = useCallback(() => {
     patisserieAudio.playSoftUiTick();
     ovenSweetPingedRef.current = false;
@@ -1338,6 +1369,16 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
               </div>
               <button
                 type="button"
+                className="micro-icon-btn landscape-hint-btn"
+                onClick={() => void handleLandscapeModeClick()}
+                title="横屏全屏体验（或横握手机切换宽屏视野）"
+                aria-label="横屏体验"
+              >
+                <SvgRotateLandscape />
+                <span className="landscape-hint-text">横屏</span>
+              </button>
+              <button
+                type="button"
                 className="micro-icon-btn"
                 onClick={() => {
                   patisserieAudio.playSoftUiTick();
@@ -1478,6 +1519,9 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
             className="console-progress-fill"
             style={{ width: `${Math.max(14, (currentStep / 7) * 100)}%` }}
           />
+        </div>
+        <div className="mobile-touch-hint" aria-hidden="true">
+          左半屏滑移镜头 · 右半屏转视角 · 再点机位回正
         </div>
         <div className="console-micro-meta">
           <span className="console-step-seal">第{cfg.roman}步</span>
