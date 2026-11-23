@@ -298,7 +298,7 @@ export interface PatisserieGameState {
   placeNextAssemblyInsert: (coaxialPrecision?: number) => void;
 
   // Step 6 Actions
-  pourMirrorGlazeOrbit: (angleDelta?: number) => void;
+  pourMirrorGlazeOrbit: (angleDelta?: number, opts?: { smoothPulse?: boolean }) => void;
   tickGlazeThermal: (dt: number) => void;
   setPouringGlaze: (pouring: boolean) => void;
 
@@ -1161,13 +1161,14 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
     }),
 
   // --- STEP 6: MIRROR GLAZE WATERFALL ---
-  pourMirrorGlazeOrbit: (angleDelta = 0.35) =>
+  pourMirrorGlazeOrbit: (angleDelta = 0.35, opts?: { smoothPulse?: boolean }) =>
     set((s) => {
       if (s.stepFailures[6] || s.glazeCoverage >= 1) return s;
       const mech = FLAVOR_MECHANICS[s.selectedFlavor];
       const absDelta = Math.abs(angleDelta);
       const nextAngle = s.glazePourAngle + angleDelta;
-      const nextCov = Math.min(1, s.glazeCoverage + absDelta * 0.085);
+      // 降低单弧度覆膜增益，使画一整圈 (~2π) 约覆盖 28%，呈现约 3.5 圈慢流丝绒浇淋体验
+      const nextCov = Math.min(1, s.glazeCoverage + absDelta * 0.045);
       const normAngle = ((nextAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       const sector = Math.min(3, Math.floor((normAngle / (Math.PI * 2)) * 4));
       const nextSectors: [boolean, boolean, boolean, boolean] = [...s.glazeSectors];
@@ -1179,8 +1180,9 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
         nextSectors[0] = nextSectors[1] = nextSectors[2] = nextSectors[3] = true;
       }
 
-      const stepSmoothness =
-        absDelta < 0.06
+      const stepSmoothness = opts?.smoothPulse
+        ? 1.0
+        : absDelta < 0.06
           ? 0.88
           : absDelta <= 0.48
             ? 1.0

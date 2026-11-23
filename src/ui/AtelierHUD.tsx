@@ -1682,7 +1682,10 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
                 <button
                   type="button"
                   className="couture-btn accent-crimson"
-                  onClick={() => pourMirrorGlazeOrbit(0.95)}
+                  onClick={() => {
+                    patisserieAudio.playGlazePour();
+                    pourMirrorGlazeOrbit(3.1, { smoothPulse: true });
+                  }}
                 >
                   画圆浇淋 {flavorSpec.glazeTempLabel}
                 </button>

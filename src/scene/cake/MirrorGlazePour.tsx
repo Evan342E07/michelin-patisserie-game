@@ -673,7 +673,8 @@ export const MirrorGlazePour: React.FC<MirrorGlazePourProps> = ({
     if (rawProgress < 0.05 && smoothProgressRef.current > 0.7) {
       smoothProgressRef.current = rawProgress;
     } else {
-      const progressLerpRate = rawProgress >= 0.96 ? 15 : 11;
+      // 模拟 32°C 高粘度香缇奶盖慢流垂滴感（较原 11/15 显著放缓）
+      const progressLerpRate = rawProgress >= 0.96 ? 5.8 : 4.2;
       smoothProgressRef.current = THREE.MathUtils.lerp(
         smoothProgressRef.current,
         rawProgress,
@@ -683,11 +684,11 @@ export const MirrorGlazePour: React.FC<MirrorGlazePourProps> = ({
         smoothProgressRef.current = rawProgress;
       }
     }
-    const targetAngle = rawAngle + (rawPouring ? t * 1.45 : 0);
+    const targetAngle = rawAngle + (rawPouring ? t * 0.68 : 0);
     smoothAngleRef.current = THREE.MathUtils.lerp(
       smoothAngleRef.current,
       targetAngle,
-      1 - Math.exp(-dt * 11)
+      1 - Math.exp(-dt * 6.2)
     );
 
     // Measure pouring angular momentum for dynamic stream thickness & crown ripple strength

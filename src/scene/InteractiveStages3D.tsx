@@ -2260,12 +2260,17 @@ export const InteractiveStages3D: React.FC = () => {
             const cx = rect.left + (proj.x * 0.5 + 0.5) * size.width;
             const cy = rect.top + (-proj.y * 0.5 + 0.5) * size.height;
             const curAngle = Math.atan2(e.clientY - cy, e.clientX - cx);
+            const radialDist = Math.hypot(e.clientX - cx, e.clientY - cy);
             if (lastGlazeAngleRef.current !== null) {
               let angleDelta = curAngle - lastGlazeAngleRef.current;
               while (angleDelta > Math.PI) angleDelta -= Math.PI * 2;
               while (angleDelta < -Math.PI) angleDelta += Math.PI * 2;
               if (Math.abs(angleDelta) > 0.015) {
-                pourMirrorGlazeOrbit(THREE.MathUtils.clamp(angleDelta, -0.75, 0.75));
+                // 对靠近投影圆心的角跳变与单帧急速划动做限幅，避免瞬间浇满
+                const dampedDelta =
+                  THREE.MathUtils.clamp(angleDelta, -0.32, 0.32) *
+                  THREE.MathUtils.clamp(radialDist / 28, 0.35, 1.0);
+                pourMirrorGlazeOrbit(dampedDelta);
                 lastGlazeAngleRef.current = curAngle;
                 triggerCooledAudio('glaze', 250, () => patisserieAudio.playGlazePour());
               }

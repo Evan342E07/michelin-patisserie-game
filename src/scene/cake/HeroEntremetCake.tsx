@@ -1754,7 +1754,7 @@ export const HeroEntremetCake: React.FC<HeroEntremetCakeProps> = ({
     sliceAnimRef.current = Math.max(0, prevS + sliceVelRef.current * dt);
 
     if (store.currentStep === 6 && targetGlaze >= 0.996 && prevG < 0.995) {
-      smoothGlazeRef.current = THREE.MathUtils.lerp(prevG, 1.0, 1 - Math.exp(-dt * 10.5));
+      smoothGlazeRef.current = THREE.MathUtils.lerp(prevG, 1.0, 1 - Math.exp(-dt * 4.8));
       if (smoothGlazeRef.current >= 0.994) {
         smoothGlazeRef.current = 1.0;
         wb.vx += 0.074;
