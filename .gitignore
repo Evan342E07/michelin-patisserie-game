@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .audit/
+.edgeone/
+*.zip
 *.log
 .DS_Store
 Thumbs.db
