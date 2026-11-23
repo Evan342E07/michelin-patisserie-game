@@ -7,6 +7,83 @@
 
 import { JudgmentTier } from '../types';
 
+export type BgmTrackId = 'cozy_japanese' | 'garden_waltz';
+
+export interface BgmTrackMeta {
+  id: BgmTrackId;
+  title: string;
+  subtitle: string;
+  url: string;
+}
+
+const AUDIO_BASE = `${import.meta.env.BASE_URL}audio`;
+
+export const BGM_TRACKS: Record<BgmTrackId, BgmTrackMeta> = {
+  cozy_japanese: {
+    id: 'cozy_japanese',
+    title: 'Cozy Japanese',
+    subtitle: '主音乐 · 日系乡村烘焙',
+    url: `${AUDIO_BASE}/bgm_cozy_japanese.mp3`,
+  },
+  garden_waltz: {
+    id: 'garden_waltz',
+    title: '晨露吉他漫步',
+    subtitle: '选放 · 22s起无缝循环',
+    url: `${AUDIO_BASE}/bgm_garden_waltz.mp3`,
+  },
+};
+
+export const BGM_TRACK_ORDER: BgmTrackId[] = ['cozy_japanese', 'garden_waltz'];
+
+interface TrimmedLoopBounds {
+  start: number;
+  end: number;
+}
+
+/**
+ * 扫描已解码 PCM AudioBuffer 的首尾有效振幅边界，消除 MP3 编码器的首尾静默帧，
+ * 确保 AudioBufferSourceNode 在 loopStart -> loopEnd 之间实现 0ms 样本级无缝循环。
+ */
+function computeTrimmedLoopBounds(buffer: AudioBuffer): TrimmedLoopBounds {
+  const sr = buffer.sampleRate;
+  const len = buffer.length;
+  const threshold = 0.0008;
+  const channels: Float32Array[] = [];
+  for (let c = 0; c < buffer.numberOfChannels; c++) {
+    channels.push(buffer.getChannelData(c));
+  }
+
+  let firstIdx = 0;
+  for (let i = 0; i < len; i++) {
+    let peak = 0;
+    for (let c = 0; c < channels.length; c++) {
+      const v = Math.abs(channels[c][i]);
+      if (v > peak) peak = v;
+    }
+    if (peak > threshold) {
+      firstIdx = Math.max(0, i - Math.floor(sr * 0.004));
+      break;
+    }
+  }
+
+  let lastIdx = len - 1;
+  for (let i = len - 1; i > firstIdx; i--) {
+    let peak = 0;
+    for (let c = 0; c < channels.length; c++) {
+      const v = Math.abs(channels[c][i]);
+      if (v > peak) peak = v;
+    }
+    if (peak > threshold) {
+      lastIdx = Math.min(len - 1, i + Math.floor(sr * 0.006));
+      break;
+    }
+  }
+
+  const start = firstIdx / sr;
+  const end = Math.max(start + 1.0, lastIdx / sr);
+  return { start, end: Math.min(buffer.duration, end) };
+}
+
 class PatisserieAudioEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -26,6 +103,19 @@ class PatisserieAudioEngine {
   private ambianceEnabled = false;
   private resumePromise: Promise<void> | null = null;
   private activeHarpStop: (() => void) | null = null;
+
+  // 双 BGM 状态与异步解码缓存（默认主音乐 Cozy Japanese，另一首从 22s 无缝循环）
+  private bgmEnabled = true;
+  private bgmTrack: BgmTrackId = 'cozy_japanese';
+  private bgmVolume = 0.34;
+  private bgmBuffers = new Map<BgmTrackId, { buffer: AudioBuffer; bounds: TrimmedLoopBounds }>();
+  private bgmLoadPromises = new Map<BgmTrackId, Promise<{ buffer: AudioBuffer; bounds: TrimmedLoopBounds } | null>>();
+  private bgmSource: AudioBufferSourceNode | null = null;
+  private bgmGain: GainNode | null = null;
+  private bgmPendingTrack: BgmTrackId | null = null;
+  private bgmPlayingTrack: BgmTrackId | null = null;
+  private bgmPlayToken = 0;
+  private bgmListeners = new Set<() => void>();
 
   private ensureContext(fromUserGesture = false): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -168,7 +258,10 @@ class PatisserieAudioEngine {
   public async unlock(): Promise<void> {
     const ctx = this.ensureContext(true);
     if (ctx) {
-      await this.resumeIfNeeded(ctx, true);
+      const ready = await this.resumeIfNeeded(ctx, true);
+      if (ready && this.bgmEnabled && !this.muted && !this.bgmSource && !this.bgmPendingTrack) {
+        void this.startBgmLoop(this.bgmTrack, 1.0);
+      }
     }
   }
 
@@ -182,6 +275,7 @@ class PatisserieAudioEngine {
     if (muted) {
       this.stopRadioLoop();
       this.stopAmbianceLoop();
+      this.stopBgmLoop(0.12);
     } else {
       if (this.radioPlaying) {
         this.startRadioLoop();
@@ -189,7 +283,11 @@ class PatisserieAudioEngine {
       if (this.ambianceEnabled) {
         this.startAmbianceLoop();
       }
+      if (this.bgmEnabled) {
+        void this.startBgmLoop(this.bgmTrack, 0.5);
+      }
     }
+    this.notifyBgmListeners();
   }
 
   public isMuted(): boolean {
@@ -1674,6 +1772,214 @@ class PatisserieAudioEngine {
     this.stopAmbianceLoop();
     if (!enabled || this.muted) return;
     this.startAmbianceLoop();
+  }
+
+  // ========================================================================
+  // 双 BGM 背景音乐系统（主音乐 Cozy Japanese + 22s 无缝循环选放曲）
+  // ========================================================================
+
+  private notifyBgmListeners(): void {
+    this.bgmListeners.forEach((cb) => {
+      try {
+        cb();
+      } catch {
+        // 忽略 UI 订阅方异常
+      }
+    });
+  }
+
+  public subscribeBgm(listener: () => void): () => void {
+    this.bgmListeners.add(listener);
+    return () => {
+      this.bgmListeners.delete(listener);
+    };
+  }
+
+  public isBgmEnabled(): boolean {
+    return this.bgmEnabled;
+  }
+
+  public getBgmTrack(): BgmTrackId {
+    return this.bgmTrack;
+  }
+
+  public getBgmVolume(): number {
+    return this.bgmVolume;
+  }
+
+  public isBgmPlaying(): boolean {
+    return this.bgmEnabled && !this.muted && this.bgmSource !== null;
+  }
+
+  private async loadBgmBuffer(
+    trackId: BgmTrackId,
+    ctx: AudioContext,
+  ): Promise<{ buffer: AudioBuffer; bounds: TrimmedLoopBounds } | null> {
+    const cached = this.bgmBuffers.get(trackId);
+    if (cached) return cached;
+
+    let pending = this.bgmLoadPromises.get(trackId);
+    if (!pending) {
+      const meta = BGM_TRACKS[trackId];
+      pending = (async () => {
+        try {
+          const resp = await fetch(meta.url);
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const arrayBuf = await resp.arrayBuffer();
+          const decoded = await ctx.decodeAudioData(arrayBuf);
+          const bounds = computeTrimmedLoopBounds(decoded);
+          const entry = { buffer: decoded, bounds };
+          this.bgmBuffers.set(trackId, entry);
+          return entry;
+        } catch (err) {
+          console.warn(`[patisserieAudio] 加载 BGM (${meta.title}) 失败:`, err);
+          return null;
+        } finally {
+          this.bgmLoadPromises.delete(trackId);
+        }
+      })();
+      this.bgmLoadPromises.set(trackId, pending);
+    }
+
+    return pending;
+  }
+
+  private stopBgmLoop(fadeSec = 0.25): void {
+    this.bgmPlayToken += 1;
+    this.bgmPendingTrack = null;
+    this.bgmPlayingTrack = null;
+    const oldSrc = this.bgmSource;
+    const oldGain = this.bgmGain;
+    this.bgmSource = null;
+    this.bgmGain = null;
+    if (!oldSrc && !oldGain) return;
+
+    const ctx = this.ctx;
+    if (ctx && ctx.state === 'running' && oldGain) {
+      const now = ctx.currentTime;
+      oldGain.gain.cancelScheduledValues(now);
+      oldGain.gain.setValueAtTime(Math.max(0.0001, oldGain.gain.value), now);
+      oldGain.gain.linearRampToValueAtTime(0.0001, now + fadeSec);
+      if (oldSrc) {
+        try {
+          oldSrc.stop(now + fadeSec + 0.03);
+        } catch {
+          // already stopped
+        }
+      }
+      window.setTimeout(() => {
+        try {
+          oldSrc?.disconnect();
+          oldGain.disconnect();
+        } catch {
+          // already disconnected
+        }
+      }, Math.ceil((fadeSec + 0.08) * 1000));
+    } else {
+      try {
+        oldSrc?.stop();
+        oldSrc?.disconnect();
+        oldGain?.disconnect();
+      } catch {
+        // already stopped
+      }
+    }
+  }
+
+  private async startBgmLoop(trackId: BgmTrackId, fadeInSec = 0.85): Promise<void> {
+    if (!this.bgmEnabled || this.muted) return;
+    if ((this.bgmSource && this.bgmPlayingTrack === trackId) || this.bgmPendingTrack === trackId) {
+      return;
+    }
+    const ctx = this.ensureContext(true);
+    if (!ctx || !this.masterGain) return;
+
+    const ready = await this.resumeIfNeeded(ctx, true);
+    if (!ready || !this.bgmEnabled || this.muted) return;
+
+    this.bgmPendingTrack = trackId;
+    const token = ++this.bgmPlayToken;
+    const loaded = await this.loadBgmBuffer(trackId, ctx);
+    if (this.bgmPendingTrack === trackId) {
+      this.bgmPendingTrack = null;
+    }
+    if (!loaded || token !== this.bgmPlayToken || !this.bgmEnabled || this.muted || this.bgmTrack !== trackId) {
+      return;
+    }
+
+    // 淡出已有声源后启动新无缝循环源
+    const prevSrc = this.bgmSource;
+    const prevGain = this.bgmGain;
+    const now = ctx.currentTime;
+    if (prevGain && prevSrc) {
+      prevGain.gain.cancelScheduledValues(now);
+      prevGain.gain.setValueAtTime(Math.max(0.0001, prevGain.gain.value), now);
+      prevGain.gain.linearRampToValueAtTime(0.0001, now + 0.35);
+      try {
+        prevSrc.stop(now + 0.38);
+      } catch {
+        // already stopped
+      }
+      window.setTimeout(() => {
+        try {
+          prevSrc.disconnect();
+          prevGain.disconnect();
+        } catch {
+          // already disconnected
+        }
+      }, 420);
+    }
+
+    const src = ctx.createBufferSource();
+    src.buffer = loaded.buffer;
+    src.loop = true;
+    src.loopStart = loaded.bounds.start;
+    src.loopEnd = loaded.bounds.end;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(Math.max(0.0001, this.bgmVolume), now + fadeInSec);
+
+    src.connect(gain);
+    gain.connect(this.masterGain);
+    src.start(now, loaded.bounds.start);
+
+    this.bgmSource = src;
+    this.bgmGain = gain;
+    this.bgmPlayingTrack = trackId;
+    this.notifyBgmListeners();
+  }
+
+  public setBgmEnabled(enabled: boolean): void {
+    this.bgmEnabled = enabled;
+    if (!enabled || this.muted) {
+      this.stopBgmLoop(0.28);
+    } else {
+      void this.startBgmLoop(this.bgmTrack, 0.75);
+    }
+    this.notifyBgmListeners();
+  }
+
+  public setBgmTrack(trackId: BgmTrackId): void {
+    this.bgmTrack = trackId;
+    if (!this.bgmEnabled) {
+      this.bgmEnabled = true;
+    }
+    if (!this.muted) {
+      void this.startBgmLoop(trackId, 0.65);
+    }
+    this.notifyBgmListeners();
+  }
+
+  public setBgmVolume(volume: number): void {
+    const clamped = Math.max(0, Math.min(1, volume));
+    this.bgmVolume = clamped;
+    if (this.ctx && this.bgmGain && this.ctx.state === 'running' && this.bgmEnabled && !this.muted) {
+      const now = this.ctx.currentTime;
+      this.bgmGain.gain.cancelScheduledValues(now);
+      this.bgmGain.gain.setTargetAtTime(Math.max(0.0001, clamped), now, 0.04);
+    }
+    this.notifyBgmListeners();
   }
 }
 

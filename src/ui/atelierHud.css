@@ -2047,3 +2047,167 @@
   transform: translateY(-1px);
   filter: brightness(1.03);
 }
+
+/* ==========================================================================
+   背景音乐留声机选曲浮卡（position: fixed 避免被手机横滑容器裁切）
+   ========================================================================== */
+.bgm-popover-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bgm-popover-card {
+  position: fixed;
+  top: 72px;
+  right: 16px;
+  z-index: 48;
+  width: 228px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--salon-veil);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(156, 116, 72, 0.52);
+  box-shadow: 0 4px 0 rgba(124, 88, 48, 0.2), 0 12px 28px rgba(58, 38, 22, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+  animation: cozyToastPop 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (max-width: 1179px) {
+  .bgm-popover-card {
+    top: 102px;
+    right: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .bgm-popover-card {
+    top: 98px;
+    right: 8px;
+    width: min(232px, calc(100vw - 16px));
+  }
+}
+
+@media (max-height: 540px) and (orientation: landscape) {
+  .bgm-popover-card {
+    top: 46px;
+    right: 10px;
+  }
+}
+
+.bgm-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bgm-pop-title {
+  font-family: var(--font-editorial-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--salon-charcoal);
+}
+
+.bgm-pop-toggle {
+  cursor: pointer;
+  border-radius: 7px;
+  border: 1px solid rgba(156, 116, 72, 0.36);
+  background: rgba(255, 252, 244, 0.78);
+  color: var(--salon-charcoal-soft);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+}
+
+.bgm-pop-toggle.active {
+  background: linear-gradient(180deg, #64885e 0%, #4e7048 100%);
+  border-color: #3f5e3a;
+  color: #fffcf4;
+}
+
+.bgm-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bgm-track-item {
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(156, 116, 72, 0.28);
+  background: rgba(255, 251, 242, 0.72);
+  color: var(--salon-charcoal);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.14s ease;
+}
+
+.bgm-track-item:hover {
+  border-color: var(--salon-gold);
+  background: rgba(255, 253, 248, 0.96);
+}
+
+.bgm-track-item.active {
+  border-color: rgba(88, 124, 84, 0.58);
+  background: linear-gradient(180deg, #eef6e7 0%, #dfeed4 100%);
+}
+
+.bgm-track-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(156, 116, 72, 0.55);
+  background: transparent;
+}
+
+.bgm-track-item.active .bgm-track-dot {
+  border-color: #3c6038;
+  background: #4e7048;
+}
+
+.bgm-track-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.bgm-track-meta strong {
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bgm-track-meta small {
+  font-size: 10px;
+  color: var(--salon-charcoal-soft);
+}
+
+.bgm-vol-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--salon-charcoal-soft);
+  padding-top: 2px;
+  border-top: 1px dashed rgba(156, 116, 72, 0.28);
+}
+
+.bgm-vol-row input[type='range'] {
+  flex: 1;
+  accent-color: #587c54;
+  height: 4px;
+  cursor: pointer;
+}

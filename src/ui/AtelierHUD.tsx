@@ -5,7 +5,12 @@ import {
   useGameStore,
 } from '../store/useGameStore';
 import { ScreenCallout, StepId } from '../types';
-import { patisserieAudio } from '../audio/patisserieAudio';
+import {
+  BGM_TRACKS,
+  BGM_TRACK_ORDER,
+  BgmTrackId,
+  patisserieAudio,
+} from '../audio/patisserieAudio';
 import {
   COUTURE_FLAVORS,
   CoutureFlavorId,
@@ -193,6 +198,14 @@ const SvgMusicNote: React.FC = () => (
     />
     <circle cx="5.2" cy="13.4" r="1.9" fill="none" stroke="currentColor" strokeWidth="1.4" />
     <circle cx="11.8" cy="11.8" r="1.9" fill="none" stroke="currentColor" strokeWidth="1.4" />
+  </svg>
+);
+
+const SvgVinylDisc: React.FC = () => (
+  <svg viewBox="0 0 18 18" width="13" height="13" className="cottage-svg-icon" aria-hidden="true">
+    <circle cx="9" cy="9" r="6.2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    <circle cx="9" cy="9" r="3.4" fill="none" stroke="currentColor" strokeWidth="0.95" opacity="0.65" />
+    <circle cx="9" cy="9" r="1.4" fill="currentColor" />
   </svg>
 );
 
@@ -409,6 +422,11 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
 
   const [muted, setMuted] = useState(() => patisserieAudio.isMuted());
   const [ambianceOn, setAmbianceOn] = useState(() => patisserieAudio.isAmbianceEnabled());
+  const [bgmEnabled, setBgmEnabled] = useState(() => patisserieAudio.isBgmEnabled());
+  const [bgmTrack, setBgmTrack] = useState<BgmTrackId>(() => patisserieAudio.getBgmTrack());
+  const [bgmVolume, setBgmVolume] = useState(() => patisserieAudio.getBgmVolume());
+  const [bgmMenuOpen, setBgmMenuOpen] = useState(false);
+  const bgmPopoverRef = useRef<HTMLDivElement | null>(null);
   const [photoMode, setPhotoMode] = useState(false);
   const [easterToast, setEasterToast] = useState<{ icon: string; message: string } | null>(null);
   const [discoveredEggs, setDiscoveredEggs] = useState<string[]>([]);
@@ -431,6 +449,37 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
       botMax: w <= 860 ? h - 220 : h - 144,
     };
   });
+
+  // 订阅双 BGM 状态变化，并在用户首次点击/触屏/按键时自动解锁并播放主音乐 Cozy Japanese
+  useEffect(() => {
+    const syncBgm = () => {
+      setBgmEnabled(patisserieAudio.isBgmEnabled());
+      setBgmTrack(patisserieAudio.getBgmTrack());
+      setBgmVolume(patisserieAudio.getBgmVolume());
+      setMuted(patisserieAudio.isMuted());
+    };
+    const unsub = patisserieAudio.subscribeBgm(syncBgm);
+
+    const onFirstGesture = () => {
+      void patisserieAudio.unlock();
+    };
+    window.addEventListener('pointerdown', onFirstGesture, { capture: true, once: true });
+    window.addEventListener('keydown', onFirstGesture, { capture: true, once: true });
+
+    const onOutsideClick = (e: PointerEvent) => {
+      if (bgmPopoverRef.current && !bgmPopoverRef.current.contains(e.target as Node)) {
+        setBgmMenuOpen(false);
+      }
+    };
+    window.addEventListener('pointerdown', onOutsideClick);
+
+    return () => {
+      unsub();
+      window.removeEventListener('pointerdown', onFirstGesture, { capture: true });
+      window.removeEventListener('keydown', onFirstGesture, { capture: true });
+      window.removeEventListener('pointerdown', onOutsideClick);
+    };
+  }, []);
 
   // Listen to 3D Cottage Room Easter Eggs (Cat Petting, Smeg Fridge Peek, Kettle Whistle, Cathedral Radio!)
   useEffect(() => {
@@ -1233,8 +1282,8 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
               type="button"
               className={`micro-icon-btn ${!muted ? 'on' : ''}`}
               onClick={handleToggleMute}
-              title={muted ? '开启厨房拟音' : '静音厨房拟音'}
-              aria-label={muted ? '开启厨房拟音' : '静音厨房拟音'}
+              title={muted ? '开启全工坊声音' : '静音全工坊声音'}
+              aria-label={muted ? '开启全工坊声音' : '静音全工坊声音'}
             >
               {muted ? (
                 <svg viewBox="0 0 18 18" width="13" height="13" aria-hidden="true">
@@ -1259,6 +1308,79 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
                 <SvgMusicNote />
               )}
             </button>
+            <div className="bgm-popover-anchor" ref={bgmPopoverRef}>
+              <button
+                type="button"
+                className={`micro-icon-btn ${bgmEnabled && !muted ? 'on' : ''}`}
+                onClick={() => {
+                  void patisserieAudio.unlock();
+                  patisserieAudio.playSoftUiTick();
+                  setBgmMenuOpen((prev) => !prev);
+                }}
+                title={`背景音乐：${BGM_TRACKS[bgmTrack].title}（点击切歌/调音量）`}
+                aria-label="背景音乐选曲"
+                aria-expanded={bgmMenuOpen}
+              >
+                <SvgVinylDisc />
+              </button>
+              {bgmMenuOpen && (
+                <div className="bgm-popover-card" role="dialog" aria-label="背景音乐控制">
+                  <div className="bgm-pop-head">
+                    <span className="bgm-pop-title">工坊 BGM</span>
+                    <button
+                      type="button"
+                      className={`bgm-pop-toggle ${bgmEnabled && !muted ? 'active' : ''}`}
+                      onClick={() => {
+                        if (muted) {
+                          patisserieAudio.setMuted(false);
+                          patisserieAudio.setBgmEnabled(true);
+                        } else {
+                          patisserieAudio.setBgmEnabled(!bgmEnabled);
+                        }
+                        patisserieAudio.playSoftUiTick();
+                      }}
+                    >
+                      {bgmEnabled && !muted ? '播放中' : '已暂停'}
+                    </button>
+                  </div>
+                  <div className="bgm-track-list">
+                    {BGM_TRACK_ORDER.map((tid) => {
+                      const item = BGM_TRACKS[tid];
+                      const active = bgmTrack === tid;
+                      return (
+                        <button
+                          key={tid}
+                          type="button"
+                          className={`bgm-track-item ${active ? 'active' : ''}`}
+                          onClick={() => {
+                            if (muted) patisserieAudio.setMuted(false);
+                            patisserieAudio.setBgmTrack(tid);
+                            patisserieAudio.playSoftUiTick();
+                          }}
+                        >
+                          <span className="bgm-track-dot" />
+                          <span className="bgm-track-meta">
+                            <strong>{item.title}</strong>
+                            <small>{item.subtitle}</small>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <label className="bgm-vol-row">
+                    <span>音量</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={Math.round(bgmVolume * 100)}
+                      onChange={(e) => patisserieAudio.setBgmVolume(Number(e.target.value) / 100)}
+                    />
+                    <span className="mono">{Math.round(bgmVolume * 100)}%</span>
+                  </label>
+                </div>
+              )}
+            </div>
             <button
               type="button"
               className="micro-icon-btn"
