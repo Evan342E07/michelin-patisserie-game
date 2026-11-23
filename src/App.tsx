@@ -1,6 +1,6 @@
-import React, { Component, ErrorInfo, lazy, ReactNode, Suspense, useCallback, useRef, useState } from 'react';
+import React, { Component, ErrorInfo, lazy, ReactNode, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { AtelierEnvironment } from './scene/environment';
 import { HeroEntremetCake } from './scene/cake';
 import { InteractiveStages3D } from './scene/InteractiveStages3D';
@@ -160,14 +160,167 @@ class CanvasErrorBoundary extends Component<CanvasErrorBoundaryProps, CanvasErro
   }
 }
 
+/**
+ * 监听 WebGL 首数帧真正渲染完成后通知外层进度蒙层收起，确保 3D 画面已就绪再淡出遮罩
+ */
+const SceneFirstFrameReporter: React.FC<{ epoch: number; onFirstFrame: () => void }> = ({
+  epoch,
+  onFirstFrame,
+}) => {
+  const frameCountRef = useRef(0);
+  const reportedRef = useRef(false);
+
+  useEffect(() => {
+    frameCountRef.current = 0;
+    reportedRef.current = false;
+  }, [epoch]);
+
+  useFrame(() => {
+    if (reportedRef.current) return;
+    frameCountRef.current += 1;
+    // 等待前 3 帧（含初始贴图上传与着色器首绘）稳定完成再揭幕
+    if (frameCountRef.current >= 3) {
+      reportedRef.current = true;
+      onFirstFrame();
+    }
+  });
+
+  return null;
+};
+
+/**
+ * 3D 场景加载进度条蒙层：实时响应贴图/场景加载与 WebGL 首帧准备状态
+ */
+const AtelierSceneLoaderOverlay: React.FC<{ progress: number; fadingOut: boolean }> = ({
+  progress,
+  fadingOut,
+}) => {
+  const clamped = Math.max(8, Math.min(100, Math.round(progress)));
+  const stageText =
+    clamped < 35
+      ? '正在调制奶油、果酱与甜品贴图…'
+      : clamped < 70
+        ? '正在搭建林间玻璃花房与烘焙岛台…'
+        : clamped < 98
+          ? '正在预热光影与 3D 材质渲染管线…'
+          : '工坊已就绪，请享用手作甜品时光 ✨';
+
+  return (
+    <div
+      className={`atelier-scene-loader${fadingOut ? ' is-ready' : ''}`}
+      role="status"
+      aria-live="polite"
+      aria-label={`3D 工坊加载进度 ${clamped}%`}
+    >
+      <div className="loader-atelier-card">
+        <div className="loader-emblem-row">
+          <span className="loader-flower-dot" aria-hidden="true">
+            🌼
+          </span>
+          <div className="loader-title">林间花房烘焙小屋</div>
+        </div>
+        <div className="loader-stage-text">{stageText}</div>
+        <div className="loader-progress-row">
+          <div className="loader-progress-track">
+            <div className="loader-progress-fill" style={{ width: `${clamped}%` }} />
+          </div>
+          <span className="loader-progress-pct">{clamped}%</span>
+        </div>
+        <div className="loader-hint-note">左半屏拖动移镜头 · 右半屏滑动转视角</div>
+      </div>
+    </div>
+  );
+};
+
 export const App: React.FC = () => {
   const [callouts, setCallouts] = useState<ScreenCallout[]>([]);
   const [canvasEpoch, setCanvasEpoch] = useState(0);
   const lastEmptyRef = useRef(true);
 
+  const [sceneReady, setSceneReady] = useState(false);
+  const [loaderMounted, setLoaderMounted] = useState(true);
+  const [loaderProgress, setLoaderProgress] = useState(14);
+  const assetFractionRef = useRef(0.25);
+
   const currentStep = useGameStore((s) => s.currentStep);
   const selectedFlavor = useGameStore((s) => s.selectedFlavor);
   const postProcessingEnabled = useGameStore((s) => s.postProcessingEnabled);
+
+  // 挂接 Three.js 全局 DefaultLoadingManager，统计真实资源加载完成比例
+  useEffect(() => {
+    const manager = THREE.DefaultLoadingManager;
+    const prevStart = manager.onStart;
+    const prevProgress = manager.onProgress;
+    const prevLoad = manager.onLoad;
+    const prevError = manager.onError;
+
+    manager.onStart = (url, loaded, total) => {
+      if (total > 0) {
+        assetFractionRef.current = Math.max(assetFractionRef.current, loaded / total);
+      }
+      prevStart?.(url, loaded, total);
+    };
+    manager.onProgress = (url, loaded, total) => {
+      if (total > 0) {
+        assetFractionRef.current = Math.max(assetFractionRef.current, loaded / total);
+      }
+      prevProgress?.(url, loaded, total);
+    };
+    manager.onLoad = () => {
+      assetFractionRef.current = 1;
+      prevLoad?.();
+    };
+    manager.onError = (url) => {
+      prevError?.(url);
+    };
+
+    return () => {
+      manager.onStart = prevStart;
+      manager.onProgress = prevProgress;
+      manager.onLoad = prevLoad;
+      manager.onError = prevError;
+    };
+  }, []);
+
+  // 根据资源加载进度与平滑插值推进进度条，未收到首帧信号前最高停留在 94%
+  useEffect(() => {
+    if (!loaderMounted) return undefined;
+    let rafId = 0;
+    const startTs = performance.now();
+
+    const stepLoop = () => {
+      const elapsedSec = (performance.now() - startTs) / 1000;
+      setLoaderProgress((prev) => {
+        if (sceneReady) {
+          const next = prev + (100 - prev) * 0.34;
+          return next > 99.2 ? 100 : next;
+        }
+        // 真实资源占 60% 权重 + 首帧编译渐进曲线占 40%，最高到 94% 等候 WebGL 首帧回调
+        const assetCap = 24 + assetFractionRef.current * 44;
+        const warmCap = Math.min(94, assetCap + (1 - Math.exp(-elapsedSec * 1.1)) * 28);
+        const next = prev + Math.max(0.35, (warmCap - prev) * 0.14);
+        return Math.min(94, next);
+      });
+      rafId = window.requestAnimationFrame(stepLoop);
+    };
+
+    rafId = window.requestAnimationFrame(stepLoop);
+    return () => window.cancelAnimationFrame(rafId);
+  }, [loaderMounted, sceneReady]);
+
+  // 收到首帧绘制完成回调后：把进度条滑至 100%，并在 520ms 后卸载遮罩
+  useEffect(() => {
+    if (!sceneReady) return undefined;
+    const timer = window.setTimeout(() => {
+      setLoaderMounted(false);
+    }, 520);
+    return () => window.clearTimeout(timer);
+  }, [sceneReady]);
+
+  const handleSceneFirstFrame = useCallback(() => {
+    setLoaderProgress(100);
+    setSceneReady(true);
+  }, []);
 
   const handleCalloutsUpdate = useCallback((next: ScreenCallout[]) => {
     if (next.length === 0) {
@@ -184,6 +337,9 @@ export const App: React.FC = () => {
   const handleCanvasReset = useCallback(() => {
     lastEmptyRef.current = true;
     setCallouts([]);
+    setSceneReady(false);
+    setLoaderProgress(18);
+    setLoaderMounted(true);
     setCanvasEpoch((prev) => prev + 1);
   }, []);
 
@@ -231,6 +387,7 @@ export const App: React.FC = () => {
             onCalloutsUpdate={handleCalloutsUpdate}
           />
           <CinematicCameraRig />
+          <SceneFirstFrameReporter epoch={canvasEpoch} onFirstFrame={handleSceneFirstFrame} />
           {postProcessingEnabled && (
             <Suspense fallback={null}>
               <AtelierPostProcessing />
@@ -240,6 +397,9 @@ export const App: React.FC = () => {
       </CanvasErrorBoundary>
 
       <AtelierHUD callouts={callouts} />
+      {loaderMounted && (
+        <AtelierSceneLoaderOverlay progress={loaderProgress} fadingOut={sceneReady} />
+      )}
     </div>
   );
 };

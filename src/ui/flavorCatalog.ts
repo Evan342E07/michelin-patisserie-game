@@ -50,8 +50,8 @@ export const COUTURE_FLAVORS: Record<CoutureFlavorId, CoutureFlavorSpec> = {
     nameFr: '普罗旺斯草莓香缇与黄金戚风',
     swatchHex: '#FFF9ED',
     accentHex: '#D99B52',
-    glazeTempLabel: '18.5°C 丝绒香缇奶盖',
-    tastingNoteCn: '波旁香草马斯卡彭香缇薄涂半裸抹面，隐约透出三层金黄戚风胚与鲜切草莓夹心，顶饰粉绿马卡龙、粉霜蓝莓与撒糖迷迭香。',
+    glazeTempLabel: '18.5°C 香甜奶油顶',
+    tastingNoteCn: '松软绵密的黄金蛋糕坯，搭配鲜切草莓夹心与香滑奶盖。',
     layerOverrides: {
       top_garnish: {
         titleCn: '新鲜草莓、蓝莓与法式马卡龙',
@@ -101,8 +101,8 @@ export const COUTURE_FLAVORS: Record<CoutureFlavorId, CoutureFlavorSpec> = {
     nameFr: '秋日焙香榛果与丝绒焦糖奶盖',
     swatchHex: '#F3DFC4',
     accentHex: '#C88948',
-    glazeTempLabel: '20.0°C 焦糖香缇奶盖',
-    tastingNoteCn: '轻盈焦糖香缇奶盖半裸抹面映衬三层焙香榛果戚风，夹心蜜桃草莓果泥与蜂蜜海盐流浆，点缀焦糖白巧薄屑与酥香马卡龙。',
+    glazeTempLabel: '20.0°C 焦糖奶盖顶',
+    tastingNoteCn: '烤得焦香的榛果蛋糕坯，裹着酸甜草莓果酱与丝滑焦糖奶油。',
     layerOverrides: {
       top_garnish: {
         titleCn: '鲜切草莓、蓝莓与焦糖马卡龙',
@@ -152,8 +152,8 @@ export const COUTURE_FLAVORS: Record<CoutureFlavorId, CoutureFlavorSpec> = {
     nameFr: '普罗旺斯春日茶园与白桃香缇',
     swatchHex: '#DFECD2',
     accentHex: '#8CAE64',
-    glazeTempLabel: '19.2°C 白桃奶霜奶盖',
-    tastingNoteCn: '石磨宇治抹茶三层戚风搭配白桃香缇半裸抹面与鲜草莓夹心，底部环绕圣安娜波浪花边，饰以糖粉薄荷、蓝莓与开心果马卡龙。',
+    glazeTempLabel: '19.2°C 白桃奶霜顶',
+    tastingNoteCn: '清香软嫩的抹茶蛋糕坯，夹着鲜草莓果泥与清爽白桃奶油。',
     layerOverrides: {
       top_garnish: {
         titleCn: '鲜草莓、蓝莓与开心果马卡龙',

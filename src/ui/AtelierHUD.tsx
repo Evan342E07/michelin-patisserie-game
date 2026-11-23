@@ -50,7 +50,7 @@ function getStepMicroGuide(step: StepId, mech: FlavorMechanicsSpec): string {
     case 2:
       return `在 3D 炉壁或下方设定 ${mech.ovenTargetTemp}°C 炉温 → 金黄焦香峰值 (0.84–0.96) 精准出炉`;
     case 3:
-      return `画圈搅动 3D 紫铜锅熬煮草莓果泥 → ${mech.coulisTargetTemp.toFixed(1)}°C 离火送入 -25°C 急冻`;
+      return `画圈搅动 3D 紫铜锅熬至 ${mech.coulisTargetTemp.toFixed(1)}°C 入模 → 在冷柜开启冷风急冻至 -18°C 以下定型出柜`;
     case 4:
       return `在 3D 石板往复刮涂降温至 ${mech.temperCrystalTemp.toFixed(1)}°C 再回温 ${mech.temperWorkingTemp.toFixed(1)}°C → 推铲三枚白巧薄屑`;
     case 5:
@@ -417,6 +417,8 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
   const pullFromOven = useGameStore((s) => s.pullFromOven);
   const stirCopperPot = useGameStore((s) => s.stirCopperPot);
   const pourAtCurrentTemp = useGameStore((s) => s.pourAtCurrentTemp);
+  const boostBlastChiller = useGameStore((s) => s.boostBlastChiller);
+  const completeBlastChiller = useGameStore((s) => s.completeBlastChiller);
   const scrapeMarbleChocolate = useGameStore((s) => s.scrapeMarbleChocolate);
   const shaveChocolateCurl = useGameStore((s) => s.shaveChocolateCurl);
   const pipeMousseSpiral = useGameStore((s) => s.pipeMousseSpiral);
@@ -1769,9 +1771,32 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
                   </button>
                 </>
               ) : !stepFailures[3] && isChilling ? (
-                <span className="mono-readout-chip">
-                  -25.0°C 急速定型中 · {chillerTemp.toFixed(1)}°C ({Math.round(chillerProgress * 100)}%)
-                </span>
+                <>
+                  <button
+                    type="button"
+                    className="couture-btn primary"
+                    disabled={chillerProgress >= 1}
+                    onClick={() => {
+                      patisserieAudio.playBlastChillerHiss(0.85);
+                      boostBlastChiller();
+                    }}
+                  >
+                    ❄️ {chillerProgress >= 1 ? '冷风已达极限' : '吹冷风加速急冻'} ({chillerTemp.toFixed(1)}°C)
+                  </button>
+                  <button
+                    type="button"
+                    className={`couture-btn ${chillerProgress >= 0.72 ? 'next-gold' : 'subtle'}`}
+                    disabled={chillerProgress < 0.72}
+                    onClick={() => {
+                      patisserieAudio.playSoftUiTick();
+                      completeBlastChiller();
+                    }}
+                  >
+                    {chillerProgress >= 0.72
+                      ? '✨ 果冻定型出柜'
+                      : `✨ 待降至 -17°C 取出 (${Math.round(chillerProgress * 100)}%)`}
+                  </button>
+                </>
               ) : !stepFailures[3] ? (
                 <button
                   type="button"

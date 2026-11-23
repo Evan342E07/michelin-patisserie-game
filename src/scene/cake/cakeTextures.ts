@@ -450,7 +450,7 @@ function generateCakeProceduralTextures(): CakeProceduralTextures {
   const jellyNormalMap = makeSeamlessTexture(jNormCanvas, 2.6, 2.6, false);
 
   // -------------------------------------------------------------------------
-  // 4. HAZELNUT PRALINE FEUILLETINE CRUNCH (512x512 + Normal + Roughness)
+  // 4. FRENCH ALMOND BUTTER SABLÉ & PASTRY CRUNCH (Warm Golden Baked Crumb)
   // -------------------------------------------------------------------------
   const cSize = 512;
   const [cColCanvas, cColCtx] = createCanvas(cSize);
@@ -458,50 +458,53 @@ function generateCakeProceduralTextures(): CakeProceduralTextures {
   const [cRoughCanvas, cRoughCtx] = createCanvas(cSize);
   const cHeight = new Float32Array(cSize * cSize);
 
-  cColCtx.fillStyle = '#6f4627';
+  // 温暖奶油金法式莎布蕾饼干底色（明亮柔和，绝不发暗发灰）
+  cColCtx.fillStyle = '#E6BD7B';
   cColCtx.fillRect(0, 0, cSize, cSize);
-  cBumpCtx.fillStyle = '#5a5a5a';
+  cBumpCtx.fillStyle = '#7A7A7A';
   cBumpCtx.fillRect(0, 0, cSize, cSize);
-  // Glossy caramelized praline binder matrix in crevices!
-  cRoughCtx.fillStyle = '#404040';
+  // 柔和微润酥松烘焙粗糙度
+  cRoughCtx.fillStyle = '#9C9C9C';
   cRoughCtx.fillRect(0, 0, cSize, cSize);
 
   for (let y = 0; y < cSize; y++) {
     for (let x = 0; x < cSize; x++) {
-      const n = periodicFbm2D(x / cSize, y / cSize, 28, 3);
-      cHeight[y * cSize + x] = 0.22 + n * 0.16;
+      const n = periodicFbm2D(x / cSize, y / cSize, 20, 3);
+      cHeight[y * cSize + x] = 0.42 + n * 0.14;
     }
   }
 
   const randCrunch = mulberry32(31997);
-  for (let i = 0; i < 4000; i++) {
-    const isFineGrit = i >= 2950;
+  for (let i = 0; i < 2400; i++) {
+    const isFineCrumb = i >= 1600;
     const x = randCrunch() * cSize;
     const y = randCrunch() * cSize;
-    const w = isFineGrit ? 1.3 + randCrunch() * 3.2 : 3.5 + randCrunch() * 15;
-    const h = isFineGrit ? 1.1 + randCrunch() * 2.6 : 2.2 + randCrunch() * 8.5;
+    const w = isFineCrumb ? 1.6 + randCrunch() * 3.0 : 4.2 + randCrunch() * 10.5;
+    const h = isFineCrumb ? 1.4 + randCrunch() * 2.5 : 3.2 + randCrunch() * 6.8;
     const ang = randCrunch() * Math.PI;
     const kind = randCrunch();
-    const hVal = kind > 0.72 ? 0.95 : kind > 0.34 ? 0.72 : 0.15;
+    const hVal = kind > 0.72 ? 0.78 : kind > 0.34 ? 0.62 : 0.46;
 
     for (const ox of [-cSize, 0, cSize]) {
       for (const oy of [-cSize, 0, cSize]) {
         const cx = x + ox;
         const cy = y + oy;
-        if (cx < -22 || cx > cSize + 22 || cy < -22 || cy > cSize + 22) continue;
+        if (cx < -18 || cx > cSize + 18 || cy < -18 || cy > cSize + 18) continue;
 
         cColCtx.save();
         cColCtx.translate(cx, cy);
         cColCtx.rotate(ang);
         cColCtx.fillStyle =
-          kind > 0.84
-            ? '#F7E1B8' // roasted Piedmont hazelnut heart nib
-            : kind > 0.70
-              ? '#6A3B1E' // toasted hazelnut skin fleck
-              : kind > 0.34
-                ? '#CF9A5C' // crisp caramelized feuilletine wafer flake
-                : '#442410'; // dark glossy praline crevice
-        cColCtx.fillRect(-w * 0.5, -h * 0.5, w, h);
+          kind > 0.80
+            ? '#FFF4DA' // 白杏仁薄片与香草奶油酥粒
+            : kind > 0.45
+              ? '#F3CE8D' // 暖金黄法式曲奇酥屑
+              : kind > 0.18
+                ? '#D7A35D' // 浅焦糖烘焙金边粒
+                : '#C28946'; // 柔暖烤杏仁香气微点（不再采用泥黑色）
+        cColCtx.beginPath();
+        cColCtx.ellipse(0, 0, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+        cColCtx.fill();
         cColCtx.restore();
 
         cBumpCtx.save();
@@ -509,21 +512,25 @@ function generateCakeProceduralTextures(): CakeProceduralTextures {
         cBumpCtx.rotate(ang);
         const bv = Math.round(hVal * 255);
         cBumpCtx.fillStyle = `rgb(${bv},${bv},${bv})`;
-        cBumpCtx.fillRect(-w * 0.5, -h * 0.5, w, h);
+        cBumpCtx.beginPath();
+        cBumpCtx.ellipse(0, 0, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+        cBumpCtx.fill();
         cBumpCtx.restore();
 
         cRoughCtx.save();
         cRoughCtx.translate(cx, cy);
         cRoughCtx.rotate(ang);
-        // High-contrast tactile crunch: hazelnuts matte (0.86), crispy wafers (0.62), praline crevices glossy (0.20)
-        const rv = kind > 0.70 ? 218 : kind > 0.34 ? 158 : 48;
+        // 柔和黄油酥饼质感：杏仁脆粒(0.54)、金黄酥屑(0.66)、润泽焦糖缝隙(0.40)
+        const rv = kind > 0.72 ? 142 : kind > 0.34 ? 172 : 106;
         cRoughCtx.fillStyle = `rgb(${rv},${rv},${rv})`;
-        cRoughCtx.fillRect(-w * 0.5, -h * 0.5, w, h);
+        cRoughCtx.beginPath();
+        cRoughCtx.ellipse(0, 0, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+        cRoughCtx.fill();
         cRoughCtx.restore();
       }
     }
 
-    // Stamp shard into heightfield for tangent-space normal map derivation
+    // Stamp soft rounded crumb into heightfield for tangent-space normal map derivation
     const cosA = Math.cos(ang);
     const sinA = Math.sin(ang);
     const hw = w * 0.5;
@@ -531,9 +538,9 @@ function generateCakeProceduralTextures(): CakeProceduralTextures {
     const bound = Math.ceil(Math.hypot(hw, hh));
     for (let dy = -bound; dy <= bound; dy++) {
       for (let dx = -bound; dx <= bound; dx++) {
-        const lx = dx * cosA + dy * sinA;
-        const ly = -dx * sinA + dy * cosA;
-        if (Math.abs(lx) <= hw && Math.abs(ly) <= hh) {
+        const lx = (dx * cosA + dy * sinA) / Math.max(0.5, hw);
+        const ly = (-dx * sinA + dy * cosA) / Math.max(0.5, hh);
+        if (lx * lx + ly * ly <= 1.0) {
           const px = ((Math.round(x) + dx) % cSize + cSize) % cSize;
           const py = ((Math.round(y) + dy) % cSize + cSize) % cSize;
           cHeight[py * cSize + px] = hVal;
@@ -542,7 +549,7 @@ function generateCakeProceduralTextures(): CakeProceduralTextures {
     }
   }
 
-  const cNormalCanvas = buildTangentNormalCanvas(cHeight, cSize, 5.4);
+  const cNormalCanvas = buildTangentNormalCanvas(cHeight, cSize, 2.0);
   const crunchColorMap = makeSeamlessTexture(cColCanvas, 3.2, 3.2, true);
   const crunchBumpMap = makeSeamlessTexture(cBumpCanvas, 3.2, 3.2, false);
   const crunchNormalMap = makeSeamlessTexture(cNormalCanvas, 3.2, 3.2, false);

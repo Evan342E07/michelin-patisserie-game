@@ -4,27 +4,37 @@ import { StepId } from '../types';
 import { COUTURE_FLAVORS, CoutureFlavorId, FLAVOR_MECHANICS } from './flavorCatalog';
 import { patisserieAudio } from '../audio/patisserieAudio';
 
-const DISPLAY_SERIF_FONT = '"Cormorant Garamond", "Noto Serif SC", serif';
-const CLEAN_SANS_FONT = '"Plus Jakarta Sans", "Noto Serif SC", sans-serif';
-const TECH_MONO_FONT = '"JetBrains Mono", "Noto Serif SC", monospace';
+const DISPLAY_SERIF_FONT = '"PingFang SC", "Hiragino Sans GB", "HarmonyOS Sans SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
+const CLEAN_SANS_FONT = '"PingFang SC", "Hiragino Sans GB", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif';
+const TECH_MONO_FONT = '"JetBrains Mono", ui-monospace, SFMono-Regular, sans-serif';
 
 type CraftPillarId = 'foam' | 'caramel' | 'temper' | 'tension';
 
+const SIMPLE_STEP_NAMES: Record<StepId, string> = {
+  1: '筛粉拌糊',
+  2: '进炉烤胚',
+  3: '熬酱急冻',
+  4: '白巧薄片',
+  5: '夹心组装',
+  6: '奶油浇顶',
+  7: '装饰切块',
+};
+
 const FLAVOR_TASTING_CRITIQUES: Record<CoutureFlavorId, Record<1 | 2 | 3, string>> = {
   raspberry_vanilla: {
-    3: '鲜切草莓果泥酸甜透亮，波旁香草马斯卡彭香缇如云轻盈，半裸金黄戚风、圣安娜奶油花边与粉绿马卡龙合奏出明媚的普罗旺斯黄金时刻圆舞曲。',
-    2: '新鲜草莓果香清晰鲜活，香缇奶盖柔润绵密；若将白巧薄屑结晶温区与奶盖均匀垂滴度再收窄半分，整体质感将臻化境。',
-    1: '鲜草莓、香草香缇与金黄戚风脆底风味悉数立住；建议在下一次制作中更沉稳地把控果胶凝点与蛋白霜保气表现。',
+    3: '酸甜的鲜草莓果酱配上奶香顺滑的奶油与松软蛋糕，每一口都甜而不腻，大功告成啦！',
+    2: '新鲜草莓香味很足，奶油奶盖也很绵密；下次把白巧和淋面火候控得更稳，就能拿满星！',
+    1: '草莓酱、奶油和金黄蛋糕体都顺利做好了！多留意搅拌打发和控温节奏会更松软美味哦。',
   },
   chocolate_gold: {
-    3: '焙烤榛果戚风与蜂蜜焦糖香缇奶盖层层交叠，白巧薄屑清脆微甜，宛如南法秋日午后暖阳流淌的温柔协奏。',
-    2: '烤榛果与焦糖香缇气息丰润悠长，草莓果泥清爽点睛；再细致打磨 V 型结晶回温与石炉火候，即可尽显田园酥润质感。',
-    1: '焦糖榛果戚风与扁桃仁脆底架构稳固；若能更稳健守住石炉出炉峰值与大理石调温精度，层次将愈发轻盈立体。',
+    3: '烤榛果的焦香融进柔滑焦糖奶油里，再搭一点点酸甜草莓芯，香甜暖胃像秋日下午茶！',
+    2: '榛果奶香浓郁、蛋糕胚也很松软，稍微打磨一下白巧调温和火候控制就能完美啦！',
+    1: '焦糖风味小蛋糕已经成型啦，下次多注意烤炉出炉时机与巧克力温度就会更香浓顺滑。',
   },
   matcha_yuzu: {
-    3: '石磨宇治春茶微甘回韵与白桃香缇清甜平衡入微，半裸嫩绿戚风配新鲜草莓与粉霜蓝莓，恰似南法阳光花园清风拂面。',
-    2: '宇治嫩茶香气雅致宜人，白桃奶盖柔和爽口；在果泥急冻守时与丝绒奶盖匀落上再精进一筹，便堪称满星之作。',
-    1: '抹茶戚风与白桃香缇层次初露清芳；若能细护蛋白霜气孔并保持奶油浇淋节奏，半裸结构将更加轻盈通透。',
+    3: '清香淡淡的抹茶蛋糕配上白桃奶油和草莓芯，清爽可口不甜腻，颜色也格外治愈！',
+    2: '抹茶清香与白桃奶油搭配得很和谐，急冻和奶油浇淋再稳一点就能拿满三星啦！',
+    1: '抹茶白桃风味小蛋糕顺利出品！下回注意保护蛋白气泡与淋面节奏会更轻盈好看。',
   },
 };
 
@@ -490,7 +500,6 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
   const resetWorkshop = useGameStore((s) => s.resetWorkshop);
 
   const [exportStatus, setExportStatus] = useState<'idle' | 'exporting' | 'done'>('idle');
-  const [selectedPillar, setSelectedPillar] = useState<CraftPillarId>('foam');
   const modalCardRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -514,39 +523,31 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
     return [
       {
         id: 'foam' as const,
-        label: '蛋白保气',
-        enTag: 'AÉRATION',
+        label: '松软打发',
+        enTag: '松软',
         score: s1,
-        metric: `保气 ${foamRetention.toFixed(1)}% · 纯净 ${siftPurity.toFixed(0)}%`,
-        detail:
-          '细目铜筛均匀雪落，三次下沉勾底 J 字弧线轻柔托起蛋白霜气泡，奠定海绵胚匀净蜂窝骨相。',
+        metric: `保气 ${foamRetention.toFixed(0)}% · 过筛 ${siftPurity.toFixed(0)}%`,
       },
       {
         id: 'caramel' as const,
-        label: '焦糖熬煮',
-        enTag: 'CUISSON',
+        label: '火候熬煮',
+        enTag: '火候',
         score: Math.round((s2 + s3) / 2),
-        metric: `炉温 ${ovenSetTemp}°C · 锁温 ${(berryLockedTemp ?? mechanics.coulisTargetTemp).toFixed(1)}°C`,
-        detail:
-          '严守石炉美拉德焦香峰值与铜锅果胶凝点，随即送入 -25.0°C 急冻定芯，封存天然鲜果酸甜汁水。',
+        metric: `烤温 ${ovenSetTemp}°C · 熬酱 ${(berryLockedTemp ?? mechanics.coulisTargetTemp).toFixed(0)}°C`,
       },
       {
         id: 'temper' as const,
-        label: '结晶调温',
-        enTag: 'CRISTAL V',
+        label: '白巧调温',
+        enTag: '调温',
         score: s4,
-        metric: `${mechanics.temperCrystalTemp.toFixed(1)}→${mechanics.temperWorkingTemp.toFixed(1)}°C · ${chocCurlsCount}/3 屑`,
-        detail:
-          '冰凉白玉石板往复推抹降温诱发稳定 V 型可可脂晶核，回温至理想工作温区后轻铲出轻盈象牙白巧薄屑。',
+        metric: `调温 ${mechanics.temperWorkingTemp.toFixed(1)}°C · ${chocCurlsCount}/3 薄片`,
       },
       {
         id: 'tension' as const,
-        label: '圣安娜抹面',
-        enTag: 'CHANTILLY',
+        label: '抹面成型',
+        enTag: '造型',
         score: Math.round((s5 + s6 + s7) / 3),
-        metric: `收尾 ${glazeTemp.toFixed(1)}°C · 半裸垂滴`,
-        detail:
-          '五重鲜果戚风内芯同轴落位支撑起丝绒香缇奶盖旋顶，边缘形成柔和垂滴与饱满斜切圣安娜波浪花边。',
+        metric: `奶盖 ${glazeTemp.toFixed(1)}°C · 装饰完成`,
       },
     ];
   }, [
@@ -559,9 +560,6 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
     glazeTemp,
     mechanics,
   ]);
-
-  const activePillarSpec =
-    craftPillars.find((p) => p.id === selectedPillar) ?? craftPillars[0];
 
   const serialNo = useMemo(() => {
     const sum = ([1, 2, 3, 4, 5, 6, 7] as StepId[]).reduce(
@@ -711,7 +709,7 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
       ctx.lineTo(W - 260, 424);
       ctx.stroke();
 
-      const flavorLabelText = `考核风味：${flavorSpec.nameCn}（${flavorSpec.nameFr}）`;
+      const flavorLabelText = `制作风味：${flavorSpec.nameCn}`;
       ctx.font = `600 24px ${CLEAN_SANS_FONT}`;
       const flavorLabelW = ctx.measureText(flavorLabelText).width;
       ctx.fillStyle = flavorSpec.swatchHex;
@@ -724,18 +722,15 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
       ctx.fillText(flavorLabelText, W / 2 + 12, 473);
 
       // 4. Sensory Tasting Critique Parchment Box
-      ctx.fillStyle = 'rgba(255, 253, 248, 0.84)';
+      ctx.fillStyle = 'rgba(255, 253, 248, 0.88)';
       ctx.strokeStyle = 'rgba(184, 142, 68, 0.38)';
       ctx.lineWidth = 1.5;
-      ctx.fillRect(140, 504, W - 280, 186);
-      ctx.strokeRect(140, 504, W - 280, 186);
+      ctx.fillRect(140, 504, W - 280, 152);
+      ctx.strokeRect(140, 504, W - 280, 152);
 
       ctx.fillStyle = '#382920';
-      ctx.font = `italic 26px ${DISPLAY_SERIF_FONT}`;
-      const nextNoteY = drawWrappedText(ctx, `“${sensoryCritique}”`, W / 2, 554, W - 360, 38);
-      ctx.fillStyle = '#6E5A49';
-      ctx.font = `500 19px ${CLEAN_SANS_FONT}`;
-      drawWrappedText(ctx, flavorSpec.tastingNoteCn, W / 2, Math.max(nextNoteY + 8, 638), W - 360, 28);
+      ctx.font = `600 26px ${CLEAN_SANS_FONT}`;
+      drawWrappedText(ctx, `“${sensoryCritique}”`, W / 2, 566, W - 360, 38);
 
       // 5. Four-Pillar Mastery Summary Grid
       const pillarTopY = 716;
@@ -791,12 +786,7 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
 
         ctx.fillStyle = '#231B16';
         ctx.font = `600 24px ${CLEAN_SANS_FONT}`;
-        ctx.fillText(sc.titleCn, 220, rowY);
-
-        ctx.fillStyle = '#7A6859';
-        ctx.font = `italic 19px ${DISPLAY_SERIF_FONT}`;
-        const posterSub = sid === 5 ? '旋台螺旋挤注·五重内芯封底' : sc.titleFr;
-        ctx.fillText(posterSub, 220, rowY + 26);
+        ctx.fillText(SIMPLE_STEP_NAMES[sid], 220, rowY + 4);
 
         // Progress track
         const barX = 790;
@@ -963,68 +953,46 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
             style={{ backgroundColor: flavorSpec.swatchHex }}
           />
           <span>
-            赏味风味：{flavorSpec.nameCn} · {flavorSpec.nameFr}
+            制作风味：{flavorSpec.nameCn}
           </span>
         </div>
 
-        {/* Custom Flavor-Authentic Sensory Tasting Critique */}
+        {/* 通俗简洁的一句话好评总结（一屏紧凑装下，告别难懂术语长文） */}
         <div className="cert-verdict keepsake-verdict-box">
           <p>“{sensoryCritique}”</p>
-          <div className="cert-tasting-composition">{flavorSpec.tastingNoteCn}</div>
         </div>
 
-        {/* Interactive 4-Pillar Mastery Craft Summary */}
-        <div className="cert-pillars-grid" role="group" aria-label="四项核心西点技艺评定">
-          {craftPillars.map((pillar) => {
-            const active = selectedPillar === pillar.id;
-            return (
-              <button
-                key={pillar.id}
-                type="button"
-                className={`cert-pillar-btn ${active ? 'active' : ''}`}
-                aria-pressed={active}
-                onClick={() => {
-                  patisserieAudio.playSoftUiTick();
-                  setSelectedPillar(pillar.id);
-                }}
-              >
-                <div className="cp-top">
-                  <span className="cp-icon-label">
-                    <PillarGlyph id={pillar.id} />
-                    <span>{pillar.label}</span>
-                  </span>
-                  <strong className="cp-score mono">{pillar.score}</strong>
-                </div>
-                <div className="cp-metric mono">{pillar.metric}</div>
-                <div className="cp-bar" aria-hidden="true">
-                  <div
-                    className="cp-bar-fill"
-                    style={{ width: `${Math.min(100, pillar.score)}%` }}
-                  />
-                </div>
-              </button>
-            );
-          })}
+        {/* 4 项手艺评分小卡 */}
+        <div className="cert-pillars-grid" role="group" aria-label="四项手艺亮点评分">
+          {craftPillars.map((pillar) => (
+            <div key={pillar.id} className="cert-pillar-btn">
+              <div className="cp-top">
+                <span className="cp-icon-label">
+                  <PillarGlyph id={pillar.id} />
+                  <span>{pillar.label}</span>
+                </span>
+                <strong className="cp-score mono">{pillar.score}</strong>
+              </div>
+              <div className="cp-metric mono">{pillar.metric}</div>
+              <div className="cp-bar" aria-hidden="true">
+                <div
+                  className="cp-bar-fill"
+                  style={{ width: `${Math.min(100, pillar.score)}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="cert-pillar-detail-card" role="status">
-          <span className="cpd-tag mono">{activePillarSpec.enTag}</span>
-          <span className="cpd-text">{activePillarSpec.detail}</span>
-        </div>
-
-        {/* Compact 7-Step Score Matrix */}
+        {/* 一屏看全 1-7 步得分（极简双列网格，无多余英文与折行） */}
         <div className="cert-scores-list compact-grid">
           {([1, 2, 3, 4, 5, 6, 7] as StepId[]).map((sid) => {
             const sc = STEP_CONFIGS[sid];
             const scoreVal = Math.max(0, stepScores[sid] ?? 0);
-            const stepSubtitle = sid === 5 ? '旋台螺旋挤注·五重内芯封底' : sc.titleFr;
             return (
               <div key={sid} className="cert-score-row">
                 <span className="cs-roman">{sc.roman}</span>
-                <div className="cs-meta">
-                  <span className="cs-name">{sc.titleCn}</span>
-                  <span className="cs-fr">{stepSubtitle}</span>
-                </div>
+                <span className="cs-name">{SIMPLE_STEP_NAMES[sid]}</span>
                 <div className="cs-bar-track" aria-hidden="true">
                   <div
                     className="cs-bar-fill"
@@ -1040,13 +1008,13 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
         {/* Footer with Total Score + Embossed Wax Seal */}
         <div className="cert-seal-footer">
           <div className="cert-summary-col">
-            <div className="cert-total-label">综合工艺精度评定</div>
+            <div className="cert-total-label">综合成绩评定</div>
             <div className="cert-total-score">
               <span>{michelin.average}</span>
               <small>/ 100 分</small>
             </div>
             <div className="cert-serial-meta">
-              证书编号 {serialNo} · {dateStr} · 林间花房
+              {serialNo} · {dateStr} · 林间花房
             </div>
           </div>
 
@@ -1063,10 +1031,10 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
             onClick={handleExportPoster}
           >
             {exportStatus === 'done'
-              ? '已保存高清成绩海报'
+              ? '已保存海报'
               : exportStatus === 'exporting'
-                ? '正在绘制高清海报…'
-                : '保存高清成绩海报'}
+                ? '绘制中…'
+                : '保存海报'}
           </button>
 
           <button
@@ -1078,7 +1046,7 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
               setSilverCutTarget(1);
             }}
           >
-            返回检视四分之一切面
+            切开看夹心
           </button>
 
           <button
@@ -1089,7 +1057,7 @@ export const MichelinCertificateModal: React.FC<MichelinCertificateModalProps> =
               resetWorkshop();
             }}
           >
-            重新制作
+            再做一次
           </button>
         </div>
       </div>

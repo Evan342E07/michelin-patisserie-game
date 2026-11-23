@@ -449,31 +449,33 @@ function generateAllAtelierTextures() {
   spongeBumpMap.wrapS = spongeBumpMap.wrapT = THREE.RepeatWrapping;
   spongeBumpMap.repeat.set(3, 3);
 
-  // 5. TOASTED HAZELNUT PRALINE FEUILLETINE CRUNCH MAP
+  // 5. GOLDEN BUTTER ALMOND SABLÉ & PASTRY CRUMB MAP
   const hCanvas = document.createElement('canvas');
   hCanvas.width = 256;
   hCanvas.height = 256;
   const hCtx = hCanvas.getContext('2d')!;
-  hCtx.fillStyle = '#8b5732';
+  hCtx.fillStyle = '#e5be7e';
   hCtx.fillRect(0, 0, 256, 256);
   const randNut = mulberry32(3199);
-  for (let i = 0; i < 680; i++) {
+  for (let i = 0; i < 480; i++) {
     const x = randNut() * 256;
     const y = randNut() * 256;
-    const w = 3 + randNut() * 9;
-    const h = 2 + randNut() * 4.5;
+    const w = 3 + randNut() * 6.5;
+    const h = 2 + randNut() * 4.2;
     const ang = randNut() * Math.PI;
     const light = randNut();
     hCtx.save();
     hCtx.translate(x, y);
     hCtx.rotate(ang);
     hCtx.fillStyle =
-      light > 0.72
-        ? '#dfb278'
-        : light > 0.35
-          ? '#b87d44'
-          : '#5c3419';
-    hCtx.fillRect(-w * 0.5, -h * 0.5, w, h);
+      light > 0.74
+        ? '#fff2d6'
+        : light > 0.36
+          ? '#f0ca8a'
+          : '#cd944d';
+    hCtx.beginPath();
+    hCtx.ellipse(0, 0, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+    hCtx.fill();
     hCtx.restore();
   }
   const crunchColorMap = new THREE.CanvasTexture(hCanvas);

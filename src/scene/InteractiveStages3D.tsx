@@ -1341,7 +1341,7 @@ const SIFT_SHAKE_DURATION = 0.74;
 const SIFT_ACTIVE_PORTION = 0.42;
 const JELLY_NORMAL_SCALE = new THREE.Vector2(0.45, 0.45);
 const SPONGE_NORMAL_SCALE = new THREE.Vector2(1.25, 1.25);
-const CRUNCH_NORMAL_SCALE = new THREE.Vector2(1.30, 1.30);
+const CRUNCH_NORMAL_SCALE = new THREE.Vector2(0.45, 0.45);
 const LINEN_BAG_NORMAL_SCALE = new THREE.Vector2(0.28, 0.28);
 
 /**
@@ -1382,8 +1382,12 @@ export const InteractiveStages3D: React.FC = () => {
   const berryTemp = useGameStore((s) => s.berryTemp);
   const stirAngle = useGameStore((s) => s.stirAngle);
   const berryLockedTemp = useGameStore((s) => s.berryLockedTemp);
+  const isChilling = useGameStore((s) => s.isChilling);
+  const chillerProgress = useGameStore((s) => s.chillerProgress);
   const stirCopperPot = useGameStore((s) => s.stirCopperPot);
   const pourAtCurrentTemp = useGameStore((s) => s.pourAtCurrentTemp);
+  const boostBlastChiller = useGameStore((s) => s.boostBlastChiller);
+  const completeBlastChiller = useGameStore((s) => s.completeBlastChiller);
   const tickCopperPotThermal = useGameStore((s) => s.tickCopperPotThermal);
   const tickBlastChiller = useGameStore((s) => s.tickBlastChiller);
 
@@ -3606,8 +3610,11 @@ export const InteractiveStages3D: React.FC = () => {
                   normalMap={cakeTextures.crunchNormalMap}
                   normalScale={CRUNCH_NORMAL_SCALE}
                   roughnessMap={cakeTextures.crunchRoughnessMap}
-                  roughness={0.86}
-                  envMapIntensity={0.26}
+                  roughness={0.68}
+                  sheen={0.32}
+                  sheenRoughness={0.58}
+                  sheenColor="#FFF4DA"
+                  envMapIntensity={0.34}
                 />
               </mesh>
             </group>
@@ -3690,8 +3697,8 @@ export const InteractiveStages3D: React.FC = () => {
         </group>
       )}
 
-      {/* Step 3 -25°C Mint Chiller Door Trigger */}
-      {currentStep === 3 && berryLockedTemp === null && !stepFailures[3] && (
+      {/* Step 3 -25°C Mint Chiller Door Trigger (入模前点击送入急冻；急冻中点击吹冷风加速降温，达 -17°C 后点击定型出柜) */}
+      {currentStep === 3 && (berryLockedTemp === null || isChilling) && !stepFailures[3] && (
         <group>
           <mesh
             position={[1.58, 1.14, -2.72]}
@@ -3702,14 +3709,22 @@ export const InteractiveStages3D: React.FC = () => {
             onClick={(e) => {
               if (e.delta > 5) return;
               e.stopPropagation();
-              pourAtCurrentTemp();
+              if (!isChilling) {
+                pourAtCurrentTemp();
+              } else if (chillerProgress < 0.72) {
+                patisserieAudio.playBlastChillerHiss(0.85);
+                boostBlastChiller();
+              } else {
+                patisserieAudio.playSoftUiTick();
+                completeBlastChiller();
+              }
             }}
           >
             <boxGeometry args={[0.96, 1.12, 0.22]} />
           </mesh>
           <FloatingPropGuideBadge
             position={[1.58, 1.72, -2.62]}
-            visible={berryTemp >= 76}
+            visible={isChilling || berryTemp >= 76}
             hovered={hoveredPropKey === 'step3_chiller'}
             variant="tap"
           />

@@ -227,6 +227,7 @@ export interface PatisserieGameState {
   berryLockedTemp: number | null;
   chillerProgress: number; // 0..1 (in -25°C blast chiller)
   chillerTemp: number; // +4.0 -> -25.0°C during blast chill
+  chillerBoostCount: number; // 玩家主动点击开启冷风加速急冻的次数
   isChilling: boolean;
 
   // Step 4: Marble Chocolate Tempering (45°C -> crystalTemp -> workingTemp + Curls)
@@ -289,6 +290,8 @@ export interface PatisserieGameState {
   tickCopperPotThermal: (dt: number) => void;
   pourAtCurrentTemp: () => void;
   tickBlastChiller: (dt: number) => void;
+  boostBlastChiller: () => void;
+  completeBlastChiller: () => void;
 
   // Step 4 Actions
   scrapeMarbleChocolate: (delta?: number) => void;
@@ -390,6 +393,7 @@ function buildStepResetPatch(
         berryLockedTemp: null,
         chillerProgress: 0,
         chillerTemp: 4.0,
+        chillerBoostCount: 0,
         isChilling: false,
       };
     case 4:
@@ -466,6 +470,7 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
   berryLockedTemp: null,
   chillerProgress: 0,
   chillerTemp: 4.0,
+  chillerBoostCount: 0,
   isChilling: false,
 
   // Step 4
@@ -911,13 +916,13 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
         berryLockedTemp: locked,
         berryMomentum: 0,
         isChilling: true,
-        chillerProgress: 0.04,
-        chillerTemp: 4.0,
+        chillerProgress: 0.06,
+        chillerTemp: 2.3,
+        chillerBoostCount: 0,
         lastJudgment: makeJudgment(
           tier,
-          tier === 'parfait' ? '果胶凝点完美' : '果泥入模定型',
-          `锁温 ${locked.toFixed(1)}°C 离火灌模，已开启 -25°C 急速冷柜`,
-          diff <= 0.45 ? '果胶凝点分毫不差！' : `距目标 ${targetTemp.toFixed(1)}°C 偏差 ${diff.toFixed(1)}°C`
+          tier === 'parfait' ? '果胶凝点完美 · 请入柜互动急冻' : '果泥入模 · 请入柜互动急冻',
+          `已于 ${locked.toFixed(1)}°C 离火灌模送入冰箱！点击「开启急冻冷风」或轻点 3D 冰箱加速降温至 -18°C 以下定型`
         ),
       };
     }),
@@ -925,32 +930,79 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
   tickBlastChiller: (dt) =>
     set((s) => {
       if (!s.isChilling) return s;
-      const next = Math.min(1, s.chillerProgress + dt * 0.42);
+      // 放慢自然预冷流速，给足玩家查看薄荷冰箱内部并主动拍击加速冷风、自主定型出柜的互动空间
+      const next = Math.min(1, s.chillerProgress + dt * 0.055);
       const nextChillerTemp = Number((4.0 - 29.0 * next).toFixed(1));
-      if (next >= 1) {
-        const targetTemp = FLAVOR_MECHANICS[s.selectedFlavor].coulisTargetTemp;
-        const locked = s.berryLockedTemp ?? targetTemp;
-        const diff = Math.abs(locked - targetTemp);
-        const scorchPenalty = s.berryIdleTime > 3.2 ? 4 : 0;
-        const score = Math.max(62, Math.min(100, Math.round(100 - diff * 11 - scorchPenalty)));
-        const tier: JudgmentTier = score >= 93 ? 'parfait' : score >= 82 ? 'tres_bien' : 'passable';
+      if (next === s.chillerProgress && nextChillerTemp === s.chillerTemp) {
+        return s;
+      }
+      return { chillerProgress: next, chillerTemp: nextChillerTemp };
+    }),
+
+  boostBlastChiller: () =>
+    set((s) => {
+      if (!s.isChilling || s.stepFailures[3]) return s;
+      const nextBoost = s.chillerBoostCount + 1;
+      const next = Math.min(1, s.chillerProgress + 0.24);
+      const nextTemp = Number((4.0 - 29.0 * next).toFixed(1));
+      const readyToPull = next >= 0.72;
+      return {
+        chillerProgress: next,
+        chillerTemp: nextTemp,
+        chillerBoostCount: nextBoost,
+        lastJudgment: readyToPull
+          ? makeJudgment(
+              'parfait',
+              '冷风急冻就位',
+              `冷温已降至 ${nextTemp.toFixed(1)}°C！果冻芯已凝实弹润，请点击「定型取出果冻芯」`
+            )
+          : makeJudgment(
+              'tres_bien',
+              `极速冷风 ×${nextBoost}`,
+              `寒气对流加速降温至 ${nextTemp.toFixed(1)}°C（降至 -17°C 以下即可定型出柜）`
+            ),
+      };
+    }),
+
+  completeBlastChiller: () =>
+    set((s) => {
+      if (!s.isChilling || s.stepFailures[3]) return s;
+      if (s.chillerProgress < 0.72) {
         return {
-          chillerProgress: 1,
-          chillerTemp: -25.0,
-          isChilling: false,
-          stepScores: { ...s.stepScores, 3: score },
-          stepCompleted: { ...s.stepCompleted, 3: true },
-          celebrationPulse: s.celebrationPulse + 1,
           lastJudgment: makeJudgment(
-            tier,
-            '急冻定型',
-            '果冻芯 -25.0°C 急冻定型完成',
-            `第三步得分 ${score} · 可前往大理石调温`,
-            score
+            'passable',
+            '果冻芯尚未凝实',
+            `当前冷柜仅 ${s.chillerTemp.toFixed(1)}°C（需先吹冷风降至 ≤ -17.0°C 才可脱模定型）`
           ),
         };
       }
-      return { chillerProgress: next, chillerTemp: nextChillerTemp };
+
+      const targetTemp = FLAVOR_MECHANICS[s.selectedFlavor].coulisTargetTemp;
+      const locked = s.berryLockedTemp ?? targetTemp;
+      const diff = Math.abs(locked - targetTemp);
+      const scorchPenalty = s.berryIdleTime > 3.2 ? 4 : 0;
+      const chillSweetSpotBonus = s.chillerProgress >= 0.84 ? 2 : 0;
+      const boostEngagementBonus = s.chillerBoostCount >= 1 ? 1 : 0;
+      const score = Math.max(
+        64,
+        Math.min(100, Math.round(97 - diff * 11 - scorchPenalty + chillSweetSpotBonus + boostEngagementBonus))
+      );
+      const tier: JudgmentTier = score >= 93 ? 'parfait' : score >= 82 ? 'tres_bien' : 'passable';
+      return {
+        chillerProgress: 1,
+        chillerTemp: s.chillerTemp,
+        isChilling: false,
+        stepScores: { ...s.stepScores, 3: score },
+        stepCompleted: { ...s.stepCompleted, 3: true },
+        celebrationPulse: s.celebrationPulse + 1,
+        lastJudgment: makeJudgment(
+          tier,
+          '急冻定型出柜',
+          `果冻芯于 ${s.chillerTemp.toFixed(1)}°C 急冻定型出柜！`,
+          `第三步得分 ${score} · 可前往大理石调温`,
+          score
+        ),
+      };
     }),
 
   // --- STEP 4: MARBLE CHOCOLATE TEMPERING (45°C -> crystalTemp -> workingTemp + Curls) ---
@@ -1454,6 +1506,7 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
         berryLockedTemp: null,
         chillerProgress: 0,
         chillerTemp: 4.0,
+        chillerBoostCount: 0,
         isChilling: false,
         chocTemp: 45.0,
         chocPhase: 'cooling_to_27',
