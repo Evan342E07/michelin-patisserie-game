@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   computeMichelinRating,
   STEP_CONFIGS,
@@ -14,8 +14,14 @@ import {
   FlavorMechanicsSpec,
 } from './flavorCatalog';
 import { TelemetryGauge } from './TelemetryGauge';
-import { MichelinCertificateModal } from './MichelinCertificateModal';
 import './atelierHud.css';
+
+// 仅在打开赏味证书弹窗时按需加载，不占用首屏 JS 解析带宽
+const MichelinCertificateModal = lazy(() =>
+  import('./MichelinCertificateModal').then((m) => ({
+    default: m.MichelinCertificateModal,
+  }))
+);
 
 export interface AtelierHUDProps {
   callouts?: ScreenCallout[];
@@ -1796,9 +1802,13 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
       <TelemetryGauge activeFlavor={selectedFlavor} />
 
       {/* ====================================================================
-          6. MICHELIN 1 / 2 / 3-STAR CERTIFICATE MODAL
+          6. MICHELIN 1 / 2 / 3-STAR CERTIFICATE MODAL (按需懒加载)
          ==================================================================== */}
-      <MichelinCertificateModal activeFlavor={selectedFlavor} />
+      {certificateModalOpen && (
+        <Suspense fallback={null}>
+          <MichelinCertificateModal activeFlavor={selectedFlavor} />
+        </Suspense>
+      )}
     </div>
   );
 };

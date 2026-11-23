@@ -1,15 +1,21 @@
-import React, { Component, ErrorInfo, ReactNode, useCallback, useRef, useState } from 'react';
+import React, { Component, ErrorInfo, lazy, ReactNode, Suspense, useCallback, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { AtelierEnvironment } from './scene/environment';
 import { HeroEntremetCake } from './scene/cake';
 import { InteractiveStages3D } from './scene/InteractiveStages3D';
 import { CinematicCameraRig } from './scene/CinematicCameraRig';
-import { AtelierPostProcessing } from './scene/postprocessing/AtelierPostProcessing';
 import { AtelierHUD } from './ui/AtelierHUD';
 import { ScreenCallout } from './types';
 import { STEP_CONFIGS, useGameStore } from './store/useGameStore';
 import { installPCSSSoftShadows } from './shaders/extremeThreeJsUpgrades';
+
+// 异步按需载入后处理渲染管线，避免阻塞首屏 JS 执行与 3D 首帧启动
+const AtelierPostProcessing = lazy(() =>
+  import('./scene/postprocessing/AtelierPostProcessing').then((m) => ({
+    default: m.AtelierPostProcessing,
+  }))
+);
 
 // Activate Contact-Hardening Vogel-Disk PCSS Soft Shadows across Three.js r170 PCFSoftShadowMap
 installPCSSSoftShadows();
@@ -225,7 +231,11 @@ export const App: React.FC = () => {
             onCalloutsUpdate={handleCalloutsUpdate}
           />
           <CinematicCameraRig />
-          {postProcessingEnabled && <AtelierPostProcessing />}
+          {postProcessingEnabled && (
+            <Suspense fallback={null}>
+              <AtelierPostProcessing />
+            </Suspense>
+          )}
         </Canvas>
       </CanvasErrorBoundary>
 
