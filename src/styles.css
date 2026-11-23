@@ -1,0 +1,40 @@
+:root {
+  --ivory-bg: #f6efe2;
+  --cream-panel: rgba(250, 242, 226, 0.92);
+  --espresso-ink: #473222;
+  --taupe-muted: #765c45;
+  --champagne-gold: #b8843c;
+  --bright-gold: #dfb35e;
+  --michelin-red: #b84b49;
+  --font-serif: 'Songti SC', 'STSong', 'Source Han Serif SC', 'Noto Serif SC', Georgia, serif;
+  --font-sans: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root,
+.atelier-viewport {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--ivory-bg);
+  font-family: var(--font-sans);
+  color: var(--espresso-ink);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.atelier-viewport canvas {
+  touch-action: none !important;
+}
+
