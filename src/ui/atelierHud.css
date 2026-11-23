@@ -118,23 +118,62 @@
 .hud-brand-compact {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   padding-left: 2px;
   padding-right: 4px;
   flex: 0 0 auto;
   flex-shrink: 0;
 }
 
+.hud-brand-titles {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
 .hud-title-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-editorial-serif);
   font-size: clamp(14.5px, 1.25vw, 17px);
-  font-weight: 600;
-  line-height: 1.35;
-  padding-left: 2px;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.05em;
   color: var(--salon-charcoal);
+  text-shadow: 0 1px 0 rgba(255, 252, 244, 0.85);
   white-space: nowrap;
   overflow: visible;
+}
+
+.hud-title-flourish {
+  font-size: 10px;
+  color: var(--salon-gold);
+  opacity: 0.88;
+}
+
+.hud-subtitle-compact {
+  display: none;
+  font-family: var(--font-tech-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  color: #8b683b;
+  margin-top: 1px;
+}
+
+.hud-brand-chapter {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fdf1d1 0%, #f3dea5 100%);
+  border: 1px solid rgba(184, 132, 54, 0.48);
+  color: #774e18;
+  font-family: var(--font-tech-mono);
+  font-size: 10px;
+  font-weight: 700;
+  box-shadow: 0 1px 0 rgba(146, 98, 34, 0.2);
 }
 
 /* Compact 7-Step Handcrafted Woodblock & Ceramic Stepper */
@@ -231,15 +270,27 @@
   white-space: nowrap;
 }
 
+.hud-tools-row-meta {
+  display: contents;
+}
+
 .top-flavor-dots {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 2px 4px;
+  padding: 2px 5px;
   background: rgba(255, 251, 242, 0.72);
   border: 1px solid rgba(156, 116, 72, 0.32);
   border-radius: 10px;
   flex-shrink: 0;
+}
+
+.top-flavor-kicker {
+  display: none;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--salon-charcoal-soft);
+  padding: 0 3px 0 2px;
 }
 
 .top-flavor-dot-btn {
@@ -410,6 +461,22 @@
   border: 1px dashed rgba(108, 138, 96, 0.34);
   border-radius: 12px;
   pointer-events: none;
+}
+
+.console-progress-track {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(156, 116, 72, 0.16);
+  overflow: hidden;
+  margin-bottom: 1px;
+}
+
+.console-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6b9162 0%, #c89444 100%);
+  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .console-micro-meta {
@@ -945,42 +1012,111 @@
   left: 50%;
   top: 74px;
   transform: translateX(-50%);
-  max-width: min(760px, calc(100vw - 32px));
-  padding: 7px 15px;
-  background: var(--salon-veil);
-  border: 1.5px solid rgba(156, 116, 72, 0.48);
-  border-radius: 10px;
+  z-index: 34;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 8px 14px;
+  background: linear-gradient(175deg, rgba(254, 250, 241, 0.96) 0%, rgba(245, 234, 212, 0.95) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(156, 116, 72, 0.52);
+  outline: 2px solid rgba(255, 252, 245, 0.65);
+  border-radius: 13px;
   display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px 10px;
-  font-size: 12px;
+  gap: 10px;
   color: var(--salon-charcoal);
-  box-shadow: 0 2px 0 rgba(124, 88, 48, 0.22), 0 8px 20px rgba(48, 30, 16, 0.14);
+  box-shadow: 0 3px 0 rgba(124, 88, 48, 0.2), 0 10px 26px rgba(48, 30, 16, 0.16);
+  animation: cozyToastPop 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hud-judgment-toast.parfait {
-  border-color: var(--salon-crimson);
+  border-color: rgba(190, 138, 60, 0.78);
+}
+
+.hud-judgment-toast.passable {
+  border-color: rgba(188, 80, 77, 0.62);
+}
+
+.jt-seal-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(188, 80, 77, 0.12);
+  border: 1px solid rgba(188, 80, 77, 0.38);
+  color: var(--salon-crimson);
+}
+
+.hud-judgment-toast.parfait .jt-seal-badge {
+  background: linear-gradient(180deg, #fdf0cc 0%, #f4dd9e 100%);
+  border-color: rgba(184, 132, 54, 0.55);
+  color: #8c5c17;
+}
+
+.hud-judgment-toast.tres_bien .jt-seal-badge {
+  background: rgba(88, 124, 84, 0.16);
+  border-color: rgba(88, 124, 84, 0.45);
+  color: #366a3c;
+}
+
+.jt-copy-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  min-width: 0;
+}
+
+.jt-headline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.jt-title-cn {
+  font-family: var(--font-editorial-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--salon-charcoal);
 }
 
 .jt-tier {
   font-family: var(--font-tech-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.1em;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(188, 80, 77, 0.11);
   color: var(--salon-crimson);
 }
 
+.hud-judgment-toast.parfait .jt-tier {
+  background: rgba(190, 138, 60, 0.16);
+  color: #8c5c17;
+}
+
+.hud-judgment-toast.tres_bien .jt-tier {
+  background: rgba(88, 124, 84, 0.15);
+  color: #366a3c;
+}
+
 .jt-detail {
-  font-size: 11px;
+  font-size: 11.5px;
+  line-height: 1.42;
   color: var(--salon-charcoal-soft);
 }
 
 .jt-score {
   font-family: var(--font-tech-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   padding: 1px 7px;
   border-radius: 6px;
@@ -1742,74 +1878,143 @@
     top: max(6px, env(safe-area-inset-top));
     left: max(6px, env(safe-area-inset-left));
     right: max(6px, env(safe-area-inset-right));
-    padding: 5px 8px;
-    gap: 4px;
-    border-radius: 11px;
+    padding: 7px 10px;
+    gap: 6px;
+    border-radius: 13px;
   }
   .hud-herbarium-corner {
     display: none;
   }
+  .hud-brand-compact {
+    width: 100%;
+    padding: 0 2px 3px;
+    border-bottom: 1px dashed rgba(156, 116, 72, 0.26);
+  }
+  .hud-brand-titles {
+    flex: 1;
+    min-width: 0;
+  }
   .hud-title-compact {
-    font-size: 12.5px;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+  }
+  .hud-subtitle-compact {
+    display: block;
+    font-size: 8px;
+  }
+  .hud-brand-chapter {
+    display: inline-flex;
+    flex-shrink: 0;
   }
   .hud-step-ribbon {
-    max-width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .hud-right-tools {
-    max-width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    gap: 4px;
-    margin-left: 0;
-  }
-  .hud-right-tools::-webkit-scrollbar {
-    display: none;
+    width: 100%;
+    justify-content: space-between;
+    gap: 2px;
+    padding: 3px 5px;
+    overflow: visible;
   }
   .hud-step-node {
-    padding: 2px 5px;
-    font-size: 10px;
+    padding: 3px 6px;
+    font-size: 10.5px;
   }
-  .hairline-pill {
-    padding: 3px 5px;
-    font-size: 9.5px;
+  .hud-right-tools {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    margin-left: 0;
   }
-  .micro-icon-btn {
-    min-width: 24px;
-    min-height: 24px;
+  .hud-tools-row-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 6px;
+  }
+  .top-flavor-kicker {
+    display: inline-block;
+  }
+  .top-flavor-dots {
+    padding: 2px 6px;
+    gap: 3px;
+  }
+  .top-flavor-dot-btn {
     width: 24px;
     height: 24px;
   }
-  .hud-bottom-console {
-    bottom: max(6px, env(safe-area-inset-bottom));
-    max-width: calc(100vw - 12px);
-    padding: 6px 8px;
+  .micro-icon-group {
+    padding-left: 6px;
     gap: 4px;
-    border-radius: 12px;
+  }
+  .micro-icon-btn {
+    min-width: 25px;
+    min-height: 25px;
+    width: 25px;
+    height: 25px;
+  }
+  .top-cam-group {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 4px;
+    background: rgba(235, 220, 194, 0.34);
+    border: 1px solid rgba(156, 116, 72, 0.24);
+    border-radius: 10px;
+    gap: 2px;
+  }
+  .hairline-pill {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+    padding: 4px 4px;
+    font-size: 10.5px;
+  }
+  .hud-bottom-console {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    padding: 8px 12px 10px;
+    gap: 6px;
+    border-radius: 14px;
   }
   .console-micro-meta {
-    font-size: 10.5px;
-    gap: 4px;
+    justify-content: space-between;
+    font-size: 11px;
+    gap: 6px;
+  }
+  .console-micro-stage {
+    font-size: 13.5px;
   }
   .stage-action-row {
+    width: 100%;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
+  }
+  .mono-readout-chip {
+    width: 100%;
+    justify-content: center;
+    padding: 5px 10px;
+    font-size: 11px;
   }
   .hud-bottom-console .couture-btn {
-    min-height: 26px;
-    padding: 4px 9px;
-    font-size: 10.5px;
+    min-height: 34px;
+    padding: 6px 14px;
+    font-size: 12px;
+    flex: 1 1 auto;
+  }
+  .j-fold-canvas-pad {
+    width: 100%;
+    justify-content: center;
+    min-height: 38px;
+    padding: 5px 14px;
   }
   .explode-slider-group {
     width: 100%;
     justify-content: center;
   }
   .explode-callouts-layer .layer-callout-item {
-    width: 110px;
     padding: 2px 5px;
     border-radius: 4px;
   }
@@ -1831,12 +2036,14 @@
   }
   .hud-judgment-toast,
   .hud-easter-egg-toast {
-    top: 108px;
-    max-width: calc(100vw - 24px);
-    white-space: normal;
-    text-align: center;
+    max-width: calc(100vw - 20px);
+    padding: 7px 12px;
+  }
+  .jt-title-cn {
+    font-size: 12.5px;
+  }
+  .jt-detail {
     font-size: 11px;
-    padding: 5px 10px;
   }
 }
 
@@ -1856,18 +2063,46 @@
     border-radius: 10px;
   }
   .hud-herbarium-corner,
-  .hud-title-compact,
+  .hud-brand-titles,
+  .hud-brand-chapter,
+  .top-flavor-kicker,
   .golden-hour-badge,
   .atelier-telemetry-panel,
   .micro-telemetry-pill,
-  .console-micro-meta {
+  .console-micro-meta,
+  .console-progress-track {
     display: none;
+  }
+  .hud-brand-compact {
+    width: auto;
+    padding: 0;
+    border: none;
+  }
+  .hud-step-ribbon {
+    width: auto;
+    justify-content: flex-start;
+  }
+  .hud-right-tools {
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+  .hud-tools-row-meta {
+    display: contents;
+  }
+  .top-cam-group {
+    width: auto;
+    background: transparent;
+    border: none;
+    padding: 0;
   }
   .hud-step-node {
     padding: 2px 5px;
     font-size: 10px;
   }
   .hairline-pill {
+    flex: 0 0 auto;
     padding: 3px 6px;
     font-size: 10px;
   }
@@ -1879,16 +2114,23 @@
   }
   .hud-bottom-console {
     bottom: max(4px, env(safe-area-inset-bottom));
+    width: fit-content;
     max-width: calc(100vw - 24px);
     padding: 4px 10px;
     gap: 3px;
     border-radius: 10px;
+  }
+  .mono-readout-chip {
+    width: auto;
+    padding: 3px 8px;
+    font-size: 10.5px;
   }
   .stage-action-row {
     flex-wrap: nowrap;
     gap: 5px;
   }
   .hud-bottom-console .couture-btn {
+    flex: 0 0 auto;
     min-height: 24px;
     padding: 3px 9px;
     font-size: 10.5px;

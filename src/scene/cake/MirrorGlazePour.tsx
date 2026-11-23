@@ -684,11 +684,11 @@ export const MirrorGlazePour: React.FC<MirrorGlazePourProps> = ({
         smoothProgressRef.current = rawProgress;
       }
     }
-    const targetAngle = rawAngle + (rawPouring ? t * 0.68 : 0);
+    const targetAngle = rawAngle + (rawPouring ? Math.sin(t * 2.0) * 0.14 : 0);
     smoothAngleRef.current = THREE.MathUtils.lerp(
       smoothAngleRef.current,
       targetAngle,
-      1 - Math.exp(-dt * 6.2)
+      1 - Math.exp(-dt * 4.5)
     );
 
     // Measure pouring angular momentum for dynamic stream thickness & crown ripple strength

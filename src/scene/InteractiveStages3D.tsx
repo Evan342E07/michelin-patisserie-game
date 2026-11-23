@@ -3151,7 +3151,13 @@ export const InteractiveStages3D: React.FC = () => {
             />
           </group>
         </group>
-        {/* 第一步细筛顶部已按用户要求移除浮动图标，保持铜筛与面粉画面纯粹清晰 */}
+        {/* 第1步铜筛与硅胶翻拌铲上方漂浮引导小图标 */}
+        <FloatingPropGuideBadge
+          position={siftProgress < 0.99 ? [0, 0.245, 0] : [0.06, 0.22, 0.04]}
+          visible={currentStep === 1 && !stepFailures[1] && (siftProgress < 0.99 || jFoldCount < 3)}
+          hovered={hoveredPropKey === 'step1_sieve' || hoveredPropKey === 'step1_spatula' || hoveredPropKey === 'step1_bowl'}
+          variant="drag"
+        />
       </group>
 
       {/* ====================================================================

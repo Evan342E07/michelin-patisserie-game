@@ -2041,9 +2041,9 @@ function buildSwirledChantillyCrownSplit(fullSegs = 120): SplitLayerGeometries {
 }
 
 function buildSemiNakedCoatWall(thetaStart: number, thetaLength: number, segs: number, weld: boolean): THREE.BufferGeometry {
-  const r = 0.4435;
+  const r = 0.4465;
   const yMin = 0.004;
-  const yMax = 0.312;
+  const yMax = 0.3065;
   const hSegs = 24;
   const positions: number[] = [];
   const uvs: number[] = [];
@@ -2238,26 +2238,23 @@ function createCaramelSplashRingGeometry(): THREE.BufferGeometry {
 export function getHeroEntremetGeometries(): HeroEntremetGeometries {
   if (cachedGeometries) return cachedGeometries;
 
-  // Layer 7: 粗犷杏仁黄油脆底（不规则波浪碎边 + 外延 0.445 阶梯基座，拒绝平滑直圆柱！）
+  // Layer 7: 粗犷杏仁黄油脆底（0.000 .. 0.027，严格不与上层底层海绵交叠避免切面 Z-fighting）
   const crunchSpec: LayerCutSpec = {
     kind: 'crunch',
     yMin: 0.0,
-    yMax: 0.030,
-    rMax: 0.446,
+    yMax: 0.027,
+    rMax: 0.445,
     heightSegs: 12,
     radialSegs: 24,
     outerRadiusAtY: (y: number) => {
-      if (y < 0.006) return 0.442 + (y / 0.006) * 0.004;
-      if (y > 0.024) return 0.446 - ((y - 0.024) / 0.006) * 0.005;
-      return 0.446;
+      if (y < 0.006) return 0.441 + (y / 0.006) * 0.004;
+      if (y > 0.022) return 0.445 - ((y - 0.022) / 0.005) * 0.004;
+      return 0.445;
     },
   };
   const crunchProfile = buildSubdividedLayerProfile(crunchSpec);
 
-  // Layer 6: 彻底打破三层一模一样克隆！三层坯体在半径、厚度与截面廓形上完全分化：
-  // - 底层：扎实外鼓焦糖烤壳大底坯 (r=0.442, h=0.068)
-  // - 中层：内缩阶梯瘦腰杏仁海绵环 (r=0.394, h=0.064 -> 视觉阶梯退让！）
-  // - 上层：超薄精致斜角树莓酒露浸润戚风片 (r=0.422, h=0.052)
+  // Layer 6: 彻底打破三层一模一样克隆！三层坯体在半径、厚度与截面廓形上完全分化，层间留 1.5mm 洁净间隙消除 Z-fighting
   const makeCustomSpongeTier = (
     yMin: number,
     yMax: number,
@@ -2276,76 +2273,76 @@ export function getHeroEntremetGeometries(): HeroEntremetGeometries {
     const profile = buildSubdividedLayerProfile(spec);
     return buildSplitLayerGeometry(profile, 96, undefined, spec, true);
   };
-  const spongeBottom = makeCustomSpongeTier(0.028, 0.098, 0.445, (y) => {
-    const t = (y - 0.028) / 0.070;
-    return 0.439 + Math.sin(t * Math.PI) * 0.006;
+  const spongeBottom = makeCustomSpongeTier(0.0285, 0.094, 0.444, (y) => {
+    const t = (y - 0.0285) / 0.0655;
+    return 0.438 + Math.sin(t * Math.PI) * 0.006;
   });
   // 中层彻底改造为【真·中空镂空花环】，内径 0.215、外径 0.398，一眼看穿内部流心与草莓！
   const midHollowRingProfile: Array<[number, number]> = [
-    [0.215, 0.132],
-    [0.396, 0.132],
+    [0.215, 0.133],
+    [0.396, 0.133],
     [0.402, 0.164],
-    [0.396, 0.196],
-    [0.215, 0.196],
+    [0.396, 0.195],
+    [0.215, 0.195],
     [0.208, 0.164],
   ];
   const spongeMid = buildSplitLayerGeometry(midHollowRingProfile, 96, undefined, undefined, true);
-  const spongeTop = makeCustomSpongeTier(0.244, 0.294, 0.422, (y) => {
-    const t = (y - 0.244) / 0.050;
+  const spongeTop = makeCustomSpongeTier(0.239, 0.291, 0.422, (y) => {
+    const t = (y - 0.239) / 0.052;
     return t > 0.65 ? 0.422 - ((t - 0.65) / 0.35) * 0.014 : 0.422;
   });
   const sponge = spongeMid;
 
-  // Layer 5: 琥珀蜂蜜焦糖软流心芯（0.094 .. 0.132，带顶部鼓波浪面）
+  // Layer 5: 琥珀蜂蜜焦糖软流心芯（0.096 .. 0.131，rMax 0.338 严格退让外侧奶油环 2mm 绝不交叠）
   const caramelSpec: LayerCutSpec = {
     kind: 'caramel',
-    yMin: 0.094,
-    yMax: 0.134,
-    rMax: 0.342,
+    yMin: 0.096,
+    yMax: 0.131,
+    rMax: 0.338,
     heightSegs: 12,
     radialSegs: 22,
     outerRadiusAtY: (y: number) => {
-      const t = (y - 0.094) / 0.040;
-      return 0.336 + Math.sin(t * Math.PI) * 0.006;
+      const t = (y - 0.096) / 0.035;
+      return 0.332 + Math.sin(t * Math.PI) * 0.006;
     },
   };
   const caramelProfile = buildSubdividedLayerProfile(caramelSpec);
 
-  // Layer 4: 鲜切草莓宝石果胶浮岛（改用带流淌波浪起伏缘与微凸顶的细分层，彻底摆脱红塑料圈感！）
+  // Layer 4: 鲜切草莓宝石果胶浮岛（0.197 .. 0.237，rMax 0.374 严格退让外侧奶油环绝不穿模闪烁）
   const jellySpec: LayerCutSpec = {
     kind: 'jelly',
-    yMin: 0.196,
-    yMax: 0.238,
-    rMax: 0.386,
+    yMin: 0.197,
+    yMax: 0.237,
+    rMax: 0.374,
     heightSegs: 12,
     radialSegs: 22,
     outerRadiusAtY: (y: number) => {
-      const t = (y - 0.196) / 0.042;
-      return 0.376 + Math.sin(t * Math.PI) * 0.010;
+      const t = (y - 0.197) / 0.040;
+      return 0.365 + Math.sin(t * Math.PI) * 0.009;
     },
   };
   const jellyProfile = buildSubdividedLayerProfile(jellySpec);
 
   // Layer 3: Whipped Vanilla Chantilly Filling Rings + Top Cushion Bed (strictly non-overlapping!)
   const lowerCreamRingProfile: Array<[number, number]> = [
-    [0.340, 0.094],
-    [0.440, 0.094],
-    [0.440, 0.132],
-    [0.340, 0.132],
+    [0.340, 0.096],
+    [0.440, 0.096],
+    [0.440, 0.131],
+    [0.340, 0.131],
   ];
   const upperCreamRingProfile: Array<[number, number]> = [
-    [0.375, 0.198],
-    [0.440, 0.198],
-    [0.440, 0.236],
-    [0.375, 0.236],
+    [0.376, 0.197],
+    [0.440, 0.197],
+    [0.440, 0.237],
+    [0.376, 0.237],
   ];
   const topCreamBedProfile: Array<[number, number]> = [
-    [0.0, 0.302],
-    [0.22, 0.302],
-    [0.441, 0.302],
-    [0.441, 0.322],
-    [0.22, 0.322],
-    [0.0, 0.322],
+    [0.0, 0.293],
+    [0.22, 0.293],
+    [0.441, 0.293],
+    [0.441, 0.3065],
+    [0.22, 0.3065],
+    [0.0, 0.3065],
   ];
   // 独立拆分为下/中奶油外环（爆炸时伴随对应夹心悬浮）与上层饱满香缇奶油垫层！
   const mousseLowerRing = buildSplitLayerGeometry(lowerCreamRingProfile, 96, undefined, undefined, true);

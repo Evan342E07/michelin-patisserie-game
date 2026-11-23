@@ -298,7 +298,10 @@ export interface PatisserieGameState {
   placeNextAssemblyInsert: (coaxialPrecision?: number) => void;
 
   // Step 6 Actions
-  pourMirrorGlazeOrbit: (angleDelta?: number, opts?: { smoothPulse?: boolean }) => void;
+  pourMirrorGlazeOrbit: (
+    angleDelta?: number,
+    opts?: { smoothPulse?: boolean; coverageStep?: number }
+  ) => void;
   tickGlazeThermal: (dt: number) => void;
   setPouringGlaze: (pouring: boolean) => void;
 
@@ -1161,14 +1164,18 @@ export const useGameStore = create<PatisserieGameState>((set) => ({
     }),
 
   // --- STEP 6: MIRROR GLAZE WATERFALL ---
-  pourMirrorGlazeOrbit: (angleDelta = 0.35, opts?: { smoothPulse?: boolean }) =>
+  pourMirrorGlazeOrbit: (
+    angleDelta = 0.35,
+    opts?: { smoothPulse?: boolean; coverageStep?: number }
+  ) =>
     set((s) => {
       if (s.stepFailures[6] || s.glazeCoverage >= 1) return s;
       const mech = FLAVOR_MECHANICS[s.selectedFlavor];
       const absDelta = Math.abs(angleDelta);
       const nextAngle = s.glazePourAngle + angleDelta;
-      // 降低单弧度覆膜增益，使画一整圈 (~2π) 约覆盖 28%，呈现约 3.5 圈慢流丝绒浇淋体验
-      const nextCov = Math.min(1, s.glazeCoverage + absDelta * 0.045);
+      // 既支持手划真实角增量，也支持按钮传递温和弧度 + 独立覆盖步进（避免点击按钮时铜壶猛甩半圈）
+      const deltaCov = opts?.coverageStep ?? absDelta * 0.045;
+      const nextCov = Math.min(1, s.glazeCoverage + deltaCov);
       const normAngle = ((nextAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       const sector = Math.min(3, Math.floor((normAngle / (Math.PI * 2)) * 4));
       const nextSectors: [boolean, boolean, boolean, boolean] = [...s.glazeSectors];

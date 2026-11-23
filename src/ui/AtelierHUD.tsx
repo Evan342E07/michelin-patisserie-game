@@ -441,6 +441,7 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
   const hasStartedWorkshopRef = useRef(false);
   const topbarRef = useRef<HTMLElement | null>(null);
   const bottomConsoleRef = useRef<HTMLElement | null>(null);
+  const [topbarBottomPx, setTopbarBottomPx] = useState<number>(92);
   const [calloutSafeBand, setCalloutSafeBand] = useState<{ topMin: number; botMax: number }>(() => {
     const h = typeof window !== 'undefined' ? window.innerHeight : 900;
     const w = typeof window !== 'undefined' ? window.innerWidth : 1440;
@@ -542,6 +543,9 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
 
       const topRect = topbarRef.current?.getBoundingClientRect();
       const botRect = bottomConsoleRef.current?.getBoundingClientRect();
+      if (topRect && topRect.bottom > 0) {
+        setTopbarBottomPx(Math.ceil(topRect.bottom));
+      }
       const isShortLandscape = h <= 540 && w > h;
       const topPad = isShortLandscape ? 22 : 28; // card renders at top: safeY - 18 => >= 10px gap below topbar
       const cardTail = isShortLandscape ? 32 : w <= 960 ? 58 : 60; // keep card bottom clear above bottom console
@@ -1107,7 +1111,18 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
           <span className="hud-crest-wrap">
             <SvgChamomileCrest />
           </span>
-          <span className="hud-title-compact">林间花房烘焙小屋</span>
+          <div className="hud-brand-titles">
+            <span className="hud-title-compact">
+              <span className="hud-title-flourish" aria-hidden="true">✦</span>
+              <span>林间花房烘焙小屋</span>
+              <span className="hud-title-flourish" aria-hidden="true">✦</span>
+            </span>
+            <span className="hud-subtitle-compact">ATELIER PÂTISSERIE · 南法手账工坊</span>
+          </div>
+          <span className="hud-brand-chapter" title="当前工序进度">
+            <SvgRibbonStar />
+            <span>{completedCount}/7 幕</span>
+          </span>
         </div>
 
         {/* Compact 7-Step Chinese Storybook Stepper */}
@@ -1135,37 +1150,207 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
           })}
         </nav>
 
-        {/* Right Utility Cluster: Flavor Dots + Camera Views + Hand-Drawn Icons */}
+        {/* Right Utility Cluster: Split cleanly into Flavor+Icons Row and Camera Row on mobile so nothing overflows! */}
         <div className="hud-right-tools">
-          <div className="top-flavor-dots" role="group" aria-label="风味切换">
-            {FLAVOR_ORDER.map((fid) => {
-              const item = COUTURE_FLAVORS[fid];
-              return (
-                <button
-                  key={fid}
-                  type="button"
-                  className={`top-flavor-dot-btn ${selectedFlavor === fid ? 'active' : ''}`}
-                  onClick={() => handleFlavorSelect(fid)}
-                  title={`${item.nameCn} · ${item.nameFr}`}
-                  aria-label={item.nameCn}
-                  aria-pressed={selectedFlavor === fid}
-                >
-                  <span
-                    className="top-flavor-swatch"
-                    style={{ backgroundColor: item.swatchHex }}
-                  />
-                </button>
-              );
-            })}
-          </div>
+          <div className="hud-tools-row-meta">
+            <div className="top-flavor-dots" role="group" aria-label="风味切换">
+              <span className="top-flavor-kicker">风味</span>
+              {FLAVOR_ORDER.map((fid) => {
+                const item = COUTURE_FLAVORS[fid];
+                return (
+                  <button
+                    key={fid}
+                    type="button"
+                    className={`top-flavor-dot-btn ${selectedFlavor === fid ? 'active' : ''}`}
+                    onClick={() => handleFlavorSelect(fid)}
+                    title={`${item.nameCn} · ${item.nameFr}`}
+                    aria-label={item.nameCn}
+                    aria-pressed={selectedFlavor === fid}
+                  >
+                    <span
+                      className="top-flavor-swatch"
+                      style={{ backgroundColor: item.swatchHex }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
 
-          <span
-            className="golden-hour-badge"
-            title="宫崎骏吉卜力 × 普罗旺斯黄金时刻柔光调"
-          >
-            <SvgSunGlow />
-            <span>普罗旺斯黄金时刻</span>
-          </span>
+            <span
+              className="golden-hour-badge"
+              title="宫崎骏吉卜力 × 普罗旺斯黄金时刻柔光调"
+            >
+              <SvgSunGlow />
+              <span>普罗旺斯黄金时刻</span>
+            </span>
+
+            <div className="micro-icon-group">
+              <button
+                type="button"
+                className={`micro-icon-btn ${ambianceOn ? 'on' : ''}`}
+                onClick={() => {
+                  const next = !ambianceOn;
+                  patisserieAudio.setGardenAmbiance(next);
+                  setAmbianceOn(patisserieAudio.isAmbianceEnabled());
+                  patisserieAudio.playSoftUiTick();
+                }}
+                title={
+                  ambianceOn
+                    ? '关闭普罗旺斯花园微风鸟鸣环境音'
+                    : '开启普罗旺斯花园微风鸟鸣环境音'
+                }
+                aria-label="切换普罗旺斯花园环境音"
+                aria-pressed={ambianceOn}
+              >
+                <SvgLeafBreeze />
+              </button>
+              <button
+                type="button"
+                className="micro-icon-btn"
+                onClick={() => {
+                  patisserieAudio.playSoftUiTick();
+                  setPhotoMode(true);
+                }}
+                title="进入纯净摄影模式"
+                aria-label="进入纯净摄影模式"
+              >
+                <SvgCameraFrame />
+              </button>
+              <button
+                type="button"
+                className={`micro-icon-btn ${postProcessingEnabled ? 'on' : ''}`}
+                onClick={() => {
+                  patisserieAudio.playSoftUiTick();
+                  setPostProcessingEnabled(!postProcessingEnabled);
+                }}
+                title={postProcessingEnabled ? '关闭暖阳柔光' : '开启暖阳柔光'}
+                aria-label="切换暖阳柔光"
+              >
+                <SvgSunGlow />
+              </button>
+              <button
+                type="button"
+                className={`micro-icon-btn ${!muted ? 'on' : ''}`}
+                onClick={handleToggleMute}
+                title={muted ? '开启全工坊声音' : '静音全工坊声音'}
+                aria-label={muted ? '开启全工坊声音' : '静音全工坊声音'}
+              >
+                {muted ? (
+                  <svg viewBox="0 0 18 18" width="13" height="13" aria-hidden="true">
+                    <path
+                      d="M7 13.2V5.2L13.6 3.6V11.6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      opacity="0.45"
+                    />
+                    <line
+                      x1="3"
+                      y1="15"
+                      x2="15"
+                      y2="3"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                ) : (
+                  <SvgMusicNote />
+                )}
+              </button>
+              <div className="bgm-popover-anchor" ref={bgmPopoverRef}>
+                <button
+                  type="button"
+                  className={`micro-icon-btn ${bgmEnabled && !muted ? 'on' : ''}`}
+                  onClick={() => {
+                    void patisserieAudio.unlock();
+                    patisserieAudio.playSoftUiTick();
+                    setBgmMenuOpen((prev) => !prev);
+                  }}
+                  title={`背景音乐：${BGM_TRACKS[bgmTrack].title}（点击切歌/调音量）`}
+                  aria-label="背景音乐选曲"
+                  aria-expanded={bgmMenuOpen}
+                >
+                  <SvgVinylDisc />
+                </button>
+                {bgmMenuOpen && (
+                  <div
+                    className="bgm-popover-card"
+                    style={{ top: `${Math.max(46, topbarBottomPx + 8)}px` }}
+                    role="dialog"
+                    aria-label="背景音乐控制"
+                  >
+                    <div className="bgm-pop-head">
+                      <span className="bgm-pop-title">工坊 BGM</span>
+                      <button
+                        type="button"
+                        className={`bgm-pop-toggle ${bgmEnabled && !muted ? 'active' : ''}`}
+                        onClick={() => {
+                          if (muted) {
+                            patisserieAudio.setMuted(false);
+                            patisserieAudio.setBgmEnabled(true);
+                          } else {
+                            patisserieAudio.setBgmEnabled(!bgmEnabled);
+                          }
+                          patisserieAudio.playSoftUiTick();
+                        }}
+                      >
+                        {bgmEnabled && !muted ? '播放中' : '已暂停'}
+                      </button>
+                    </div>
+                    <div className="bgm-track-list">
+                      {BGM_TRACK_ORDER.map((tid) => {
+                        const item = BGM_TRACKS[tid];
+                        const active = bgmTrack === tid;
+                        return (
+                          <button
+                            key={tid}
+                            type="button"
+                            className={`bgm-track-item ${active ? 'active' : ''}`}
+                            onClick={() => {
+                              if (muted) patisserieAudio.setMuted(false);
+                              patisserieAudio.setBgmTrack(tid);
+                              patisserieAudio.playSoftUiTick();
+                            }}
+                          >
+                            <span className="bgm-track-dot" />
+                            <span className="bgm-track-meta">
+                              <strong>{item.title}</strong>
+                              <small>{item.subtitle}</small>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <label className="bgm-vol-row">
+                      <span>音量</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={Math.round(bgmVolume * 100)}
+                        onChange={(e) => patisserieAudio.setBgmVolume(Number(e.target.value) / 100)}
+                      />
+                      <span className="mono">{Math.round(bgmVolume * 100)}%</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="micro-icon-btn"
+                onClick={() => {
+                  patisserieAudio.playSoftUiTick();
+                  resetHudTransientState();
+                  resetWorkshop();
+                }}
+                title="重置工坊进度"
+                aria-label="重置工坊进度"
+              >
+                <SvgResetLoop />
+              </button>
+            </div>
+          </div>
 
           <div className="top-cam-group">
             <button
@@ -1233,176 +1418,18 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
               <span>茶叙</span>
             </button>
           </div>
-
-          <div className="micro-icon-group">
-            <button
-              type="button"
-              className={`micro-icon-btn ${ambianceOn ? 'on' : ''}`}
-              onClick={() => {
-                const next = !ambianceOn;
-                patisserieAudio.setGardenAmbiance(next);
-                setAmbianceOn(patisserieAudio.isAmbianceEnabled());
-                patisserieAudio.playSoftUiTick();
-              }}
-              title={
-                ambianceOn
-                  ? '关闭普罗旺斯花园微风鸟鸣环境音'
-                  : '开启普罗旺斯花园微风鸟鸣环境音'
-              }
-              aria-label="切换普罗旺斯花园环境音"
-              aria-pressed={ambianceOn}
-            >
-              <SvgLeafBreeze />
-            </button>
-            <button
-              type="button"
-              className="micro-icon-btn"
-              onClick={() => {
-                patisserieAudio.playSoftUiTick();
-                setPhotoMode(true);
-              }}
-              title="进入纯净摄影模式"
-              aria-label="进入纯净摄影模式"
-            >
-              <SvgCameraFrame />
-            </button>
-            <button
-              type="button"
-              className={`micro-icon-btn ${postProcessingEnabled ? 'on' : ''}`}
-              onClick={() => {
-                patisserieAudio.playSoftUiTick();
-                setPostProcessingEnabled(!postProcessingEnabled);
-              }}
-              title={postProcessingEnabled ? '关闭暖阳柔光' : '开启暖阳柔光'}
-              aria-label="切换暖阳柔光"
-            >
-              <SvgSunGlow />
-            </button>
-            <button
-              type="button"
-              className={`micro-icon-btn ${!muted ? 'on' : ''}`}
-              onClick={handleToggleMute}
-              title={muted ? '开启全工坊声音' : '静音全工坊声音'}
-              aria-label={muted ? '开启全工坊声音' : '静音全工坊声音'}
-            >
-              {muted ? (
-                <svg viewBox="0 0 18 18" width="13" height="13" aria-hidden="true">
-                  <path
-                    d="M7 13.2V5.2L13.6 3.6V11.6"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                    opacity="0.45"
-                  />
-                  <line
-                    x1="3"
-                    y1="15"
-                    x2="15"
-                    y2="3"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              ) : (
-                <SvgMusicNote />
-              )}
-            </button>
-            <div className="bgm-popover-anchor" ref={bgmPopoverRef}>
-              <button
-                type="button"
-                className={`micro-icon-btn ${bgmEnabled && !muted ? 'on' : ''}`}
-                onClick={() => {
-                  void patisserieAudio.unlock();
-                  patisserieAudio.playSoftUiTick();
-                  setBgmMenuOpen((prev) => !prev);
-                }}
-                title={`背景音乐：${BGM_TRACKS[bgmTrack].title}（点击切歌/调音量）`}
-                aria-label="背景音乐选曲"
-                aria-expanded={bgmMenuOpen}
-              >
-                <SvgVinylDisc />
-              </button>
-              {bgmMenuOpen && (
-                <div className="bgm-popover-card" role="dialog" aria-label="背景音乐控制">
-                  <div className="bgm-pop-head">
-                    <span className="bgm-pop-title">工坊 BGM</span>
-                    <button
-                      type="button"
-                      className={`bgm-pop-toggle ${bgmEnabled && !muted ? 'active' : ''}`}
-                      onClick={() => {
-                        if (muted) {
-                          patisserieAudio.setMuted(false);
-                          patisserieAudio.setBgmEnabled(true);
-                        } else {
-                          patisserieAudio.setBgmEnabled(!bgmEnabled);
-                        }
-                        patisserieAudio.playSoftUiTick();
-                      }}
-                    >
-                      {bgmEnabled && !muted ? '播放中' : '已暂停'}
-                    </button>
-                  </div>
-                  <div className="bgm-track-list">
-                    {BGM_TRACK_ORDER.map((tid) => {
-                      const item = BGM_TRACKS[tid];
-                      const active = bgmTrack === tid;
-                      return (
-                        <button
-                          key={tid}
-                          type="button"
-                          className={`bgm-track-item ${active ? 'active' : ''}`}
-                          onClick={() => {
-                            if (muted) patisserieAudio.setMuted(false);
-                            patisserieAudio.setBgmTrack(tid);
-                            patisserieAudio.playSoftUiTick();
-                          }}
-                        >
-                          <span className="bgm-track-dot" />
-                          <span className="bgm-track-meta">
-                            <strong>{item.title}</strong>
-                            <small>{item.subtitle}</small>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <label className="bgm-vol-row">
-                    <span>音量</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={Math.round(bgmVolume * 100)}
-                      onChange={(e) => patisserieAudio.setBgmVolume(Number(e.target.value) / 100)}
-                    />
-                    <span className="mono">{Math.round(bgmVolume * 100)}%</span>
-                  </label>
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              className="micro-icon-btn"
-              onClick={() => {
-                patisserieAudio.playSoftUiTick();
-                resetHudTransientState();
-                resetWorkshop();
-              }}
-              title="重置工坊进度"
-              aria-label="重置工坊进度"
-            >
-              <SvgResetLoop />
-            </button>
-          </div>
         </div>
       </header>
 
       {/* ====================================================================
-          3. FLOATING JUDGMENT & COTTAGE EASTER-EGG MICRO-TOASTS
+          3. FLOATING JUDGMENT & COTTAGE EASTER-EGG MICRO-TOASTS (动态避让顶栏零穿帮)
          ==================================================================== */}
       {easterToast && (
-        <div className="hud-easter-egg-toast" role="status">
+        <div
+          className="hud-easter-egg-toast"
+          style={{ top: `${Math.max(54, topbarBottomPx + 10)}px` }}
+          role="status"
+        >
           <span>{easterToast.icon}</span>
           <span>{easterToast.message}</span>
           <span className="hud-easter-egg-badge">
@@ -1411,15 +1438,32 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
         </div>
       )}
       {lastJudgment && !easterToast && (
-        <div className={`hud-judgment-toast ${lastJudgment.tier}`} role="status">
-          <span className="jt-tier">{lastJudgment.titleFr}</span>
-          <span>{lastJudgment.titleCn}</span>
-          {lastJudgment.detailCn && (
-            <span className="jt-detail">· {lastJudgment.detailCn}</span>
-          )}
-          {typeof lastJudgment.score === 'number' && lastJudgment.score > 0 && (
-            <span className="jt-score">{lastJudgment.score} 分</span>
-          )}
+        <div
+          className={`hud-judgment-toast ${lastJudgment.tier}`}
+          style={{ top: `${Math.max(54, topbarBottomPx + 10)}px` }}
+          role="status"
+        >
+          <span className="jt-seal-badge" aria-hidden="true">
+            {lastJudgment.tier === 'parfait' ? (
+              <SvgRibbonStar />
+            ) : lastJudgment.tier === 'tres_bien' ? (
+              <SvgCheckSeal />
+            ) : (
+              <SvgAlertDiamond />
+            )}
+          </span>
+          <div className="jt-copy-col">
+            <div className="jt-headline">
+              <strong className="jt-title-cn">{lastJudgment.titleCn}</strong>
+              <span className="jt-tier">{lastJudgment.titleFr}</span>
+              {typeof lastJudgment.score === 'number' && lastJudgment.score > 0 && (
+                <span className="jt-score">{lastJudgment.score} 分</span>
+              )}
+            </div>
+            {lastJudgment.detailCn && (
+              <div className="jt-detail">{lastJudgment.detailCn}</div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1429,6 +1473,12 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
       <section ref={bottomConsoleRef} className="hud-bottom-console">
         <SvgCornerSprig className="hud-herbarium-corner tl" />
         <SvgCornerSprig className="hud-herbarium-corner tr" />
+        <div className="console-progress-track" aria-hidden="true">
+          <div
+            className="console-progress-fill"
+            style={{ width: `${Math.max(14, (currentStep / 7) * 100)}%` }}
+          />
+        </div>
         <div className="console-micro-meta">
           <span className="console-step-seal">第{cfg.roman}步</span>
           <span className="console-micro-stage">{cfg.titleCn}</span>
@@ -1806,7 +1856,7 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
                   className="couture-btn accent-crimson"
                   onClick={() => {
                     patisserieAudio.playGlazePour();
-                    pourMirrorGlazeOrbit(3.1, { smoothPulse: true });
+                    pourMirrorGlazeOrbit(0.78, { smoothPulse: true, coverageStep: 0.13 });
                   }}
                 >
                   画圆浇淋 {flavorSpec.glazeTempLabel}
