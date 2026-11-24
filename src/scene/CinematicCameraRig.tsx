@@ -72,17 +72,27 @@ function clampCameraInsideSalon(
 
 function computeAdaptiveFov(baseFov: number, width: number, height: number): number {
   const aspect = Math.max(0.35, width / Math.max(1, height));
-  // 手机竖屏（aspect < 1.05）平滑扩展垂直 FOV 以确保横跨桌面的铜锅/蛋糕不截断左右边缘；
-  // 手机极矮横屏（height < 480）微扩 3° 保留充足上下余裕。
+  // 手机竖屏（aspect < 1.05）温和扩展垂直 FOV（上限 58°）并配合距离自适应退后，
+  // 既避免大广角透视畸变，又确保铜碗双耳与草莓蛋糕完整居中留白。
   if (aspect < 1.05) {
-    const scale = Math.min(1.88, Math.pow(1.22 / aspect, 0.52));
+    const scale = Math.min(1.52, Math.pow(1.16 / aspect, 0.42));
     const rad = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(baseFov) * 0.5) * scale);
-    return Math.min(72, Math.max(baseFov, THREE.MathUtils.radToDeg(rad)));
+    return Math.min(58, Math.max(baseFov, THREE.MathUtils.radToDeg(rad)));
   }
   if (height > 0 && height < 480) {
     return Math.min(54, baseFov + 3);
   }
   return baseFov;
+}
+
+/**
+ * 计算竖屏构图平滑后退系数：在瘦长手机屏幕（aspect < 0.88）下适度拉远近景工位机位，
+ * 让主体左右两侧保留桌布与茶具呼吸感。
+ */
+function computePortraitPullbackFactor(width: number, height: number): number {
+  const aspect = Math.max(0.35, width / Math.max(1, height));
+  if (aspect >= 0.88) return 1.0;
+  return 1.0 + THREE.MathUtils.clamp((0.88 - aspect) * 0.68, 0.0, 0.30);
 }
 
 export const CinematicCameraRig: React.FC = () => {
@@ -171,16 +181,31 @@ export const CinematicCameraRig: React.FC = () => {
     [activeShot.fov, size.width, size.height]
   );
 
-  // 横竖屏实时旋转手机屏幕时平滑重算 FOV，无需重载场景
+  // 针对手机竖屏对近景工位执行轻微后退构图（防止铜碗双耳和主蛋糕撑满裁切），且跳过宏大远景
+  const resolvedShotPos = useMemo(() => {
+    const baseTarget = new THREE.Vector3(...activeShot.target);
+    const basePos = new THREE.Vector3(...activeShot.pos);
+    const isPanorama = cameraOverride === 'atelier_grand' || cameraOverride === 'garden_creek';
+    const pullback = isPanorama ? 1.0 : computePortraitPullbackFactor(size.width, size.height);
+    if (pullback > 1.001) {
+      const offset = basePos.clone().sub(baseTarget).multiplyScalar(pullback);
+      basePos.copy(baseTarget).add(offset);
+      clampCameraInsideSalon(basePos, baseTarget, new THREE.Vector3());
+    }
+    return [basePos.x, basePos.y, basePos.z] as [number, number, number];
+  }, [activeShot, cameraOverride, size.width, size.height]);
+
+  // 横竖屏实时旋转手机屏幕时平滑重算 FOV 与机位距离，无需重载场景
   useEffect(() => {
     goalFov.current = targetAdaptiveFov;
-  }, [targetAdaptiveFov]);
+    goalPos.current.set(...resolvedShotPos);
+  }, [targetAdaptiveFov, resolvedShotPos]);
 
   useEffect(() => {
     if (!hasInitializedRef.current) {
       hasInitializedRef.current = true;
       const persp = camera as THREE.PerspectiveCamera;
-      persp.position.set(...activeShot.pos);
+      persp.position.set(...resolvedShotPos);
       persp.fov = targetAdaptiveFov;
       persp.updateProjectionMatrix();
       if (controlsRef.current) {
@@ -190,7 +215,7 @@ export const CinematicCameraRig: React.FC = () => {
         controlsRef.current.enabled = !useGameStore.getState().isInteractingWithProp;
         controlsRef.current.update();
       }
-      goalPos.current.set(...activeShot.pos);
+      goalPos.current.set(...resolvedShotPos);
       goalTarget.current.set(...activeShot.target);
       goalFov.current = targetAdaptiveFov;
       glideTimer.current = 0;
@@ -198,18 +223,17 @@ export const CinematicCameraRig: React.FC = () => {
       return;
     }
 
-    goalPos.current.set(...activeShot.pos);
+    goalPos.current.set(...resolvedShotPos);
     goalTarget.current.set(...activeShot.target);
     goalFov.current = targetAdaptiveFov;
 
-    // Lock OrbitControls & release azimuth constraints during station-switch glide (~0.72s)
-    // so early player drags before settling never strand the camera mid-slew
+    // Lock OrbitControls & release azimuth constraints during crisp station-switch glide (~0.66s)
     if (controlsRef.current) {
       controlsRef.current.enabled = false;
       controlsRef.current.minAzimuthAngle = -Infinity;
       controlsRef.current.maxAzimuthAngle = Infinity;
     }
-    glideTimer.current = 0.84;
+    glideTimer.current = 0.68;
     posVel.current.set(0, 0, 0);
     targetVel.current.set(0, 0, 0);
     fovVel.current = 0;
@@ -220,17 +244,17 @@ export const CinematicCameraRig: React.FC = () => {
     prevBreathOffsetRef.current.set(0, 0, 0);
     celebrationImpulseTimerRef.current = 0;
     prevCelebrationYRef.current = 0;
-  }, [activeShot, camera, cameraRecenterCounter]);
+  }, [activeShot, resolvedShotPos, camera, cameraRecenterCounter]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05);
     const persp = camera as THREE.PerspectiveCamera;
 
     if (glideTimer.current > 0) {
-      // Critically-damped spring smoothDamp (cinema ease-in & ease-out, zero per-frame allocations!)
+      // Critically-damped spring smoothDamp (crisp ~0.68s cinema glide)
       const glideDt = Math.min(delta, 0.08);
       glideTimer.current = Math.max(0, glideTimer.current - glideDt);
-      const omega = 8.4;
+      const omega = 10.6;
       const x = omega * glideDt;
       const expFactor = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
 

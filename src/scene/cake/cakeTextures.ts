@@ -641,16 +641,16 @@ function generateCakeProceduralTextures(): CakeProceduralTextures {
 
     for (let x = 0; x < snSize; x++) {
       const u = x / snSize;
-      // 水平顺滑转台抹刀肌理（彻底消除侧面竖条纹感！）
-      const knifeNoise = periodicFbm2D(u * 0.5, v * 4.5, 4, 3);
-      const horizSweep = periodicFbm2D(u * 0.35 + 0.15, v * 16.0, 6, 2);
+      // 严格保持 u 方向整数整周期（无 repeat 接缝跳变），呈现水平流畅法式抹刀奶油抹面肌理
+      const knifeNoise = periodicFbm2D(u, v * 3.0, 3, 3);
+      const horizSweep = periodicFbm2D(u + 0.15, v * 12.0, 2, 2);
       const topBottomCollar = Math.max(
         1.0 - THREE.MathUtils.smoothstep(v, 0.015, 0.065),
         THREE.MathUtils.smoothstep(v, 0.92, 0.98)
       );
 
       // Authentic French semi-naked horizontal palette-knife wipe: smooth translucent chiffon reveal
-      let alpha = 0.88 - spongePeak * (0.62 + (knifeNoise - 0.5) * 0.24) + (horizSweep - 0.5) * 0.09;
+      let alpha = 0.86 - spongePeak * (0.60 + (knifeNoise - 0.5) * 0.18) + (horizSweep - 0.5) * 0.07;
       alpha = Math.max(alpha, topBottomCollar * 0.90);
       alpha *= THREE.MathUtils.smoothstep(v, 0.0, 0.012) * (1.0 - THREE.MathUtils.smoothstep(v, 0.988, 1.0));
       alpha = Math.max(0.04, Math.min(0.95, alpha));
@@ -675,9 +675,9 @@ function generateCakeProceduralTextures(): CakeProceduralTextures {
   }
   snColCtx.putImageData(snColImg, 0, 0);
   snAlphaCtx.putImageData(snAlphaImg, 0, 0);
-  const semiNakedCoatMap = makeSeamlessTexture(snColCanvas, 3.0, 1.0, true);
+  const semiNakedCoatMap = makeSeamlessTexture(snColCanvas, 1.0, 1.0, true);
   semiNakedCoatMap.wrapT = THREE.ClampToEdgeWrapping;
-  const semiNakedAlphaMap = makeSeamlessTexture(snAlphaCanvas, 3.0, 1.0, false);
+  const semiNakedAlphaMap = makeSeamlessTexture(snAlphaCanvas, 1.0, 1.0, false);
   semiNakedAlphaMap.wrapT = THREE.ClampToEdgeWrapping;
 
   // -------------------------------------------------------------------------

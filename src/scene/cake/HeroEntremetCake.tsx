@@ -888,7 +888,7 @@ export const HeroEntremetCake: React.FC<HeroEntremetCakeProps> = ({
             sssStrength: kind === 'mid' ? 0.52 : 0.42,
             wrapAmount: 0.62,
             rimWarmth: 0.36,
-            pomStrength: 0.008,
+            pomStrength: 0.0015,
             maillardEdge: {
               minY: 0.028,
               maxY: 0.302,
@@ -1141,21 +1141,21 @@ export const HeroEntremetCake: React.FC<HeroEntremetCakeProps> = ({
       { rimColor: '#FFF0C6', rimStrength: 0.22, rimPower: 2.8, topBias: 0.45, cacheTag: 'hero-rim-mousse-cap' }
     );
 
-    // Layer 2: 高对比镜面流瀑皇冠淋面与艺术长挂滴（粉樱/黑巧/翠绿镜面釉，彻底区分于白奶油！）
+    // Layer 2: 温润丝滑法式草莓果胶淋面皇冠（柔化塑料高光，呈现自然凝脂釉光）
     const glazeMat = enhanceWithStylizedFresnelRim(
       enhanceMaterialWithFoodSSS(
         new THREE.MeshPhysicalMaterial({
           color: flavor.glazeColor,
           bumpMap: textures.chantillyBumpMap,
-          bumpScale: 0.0018,
-          roughness: 0.14,
+          bumpScale: 0.0014,
+          roughness: 0.22,
           metalness: 0.0,
-          clearcoat: 0.86,
-          clearcoatRoughness: 0.10,
-          sheen: 0.25,
+          clearcoat: 0.44,
+          clearcoatRoughness: 0.20,
+          sheen: 0.30,
           sheenColor: new THREE.Color(flavor.glazeBright),
-          specularIntensity: 0.85,
-          envMapIntensity: 0.72,
+          specularIntensity: 0.56,
+          envMapIntensity: 0.48,
         }),
         {
           sssColor: flavor.glazeBright,
@@ -1185,10 +1185,7 @@ export const HeroEntremetCake: React.FC<HeroEntremetCakeProps> = ({
           color: flavor.glazeColor,
           map: textures.semiNakedCoatMap,
           alphaMap: textures.semiNakedAlphaMap,
-          bumpMap: textures.chantillyBumpMap,
-          bumpScale: 0.0024,
-          roughnessMap: textures.chantillyRoughnessMap,
-          roughness: 1.0,
+          roughness: 0.62,
           clearcoat: 0.0,
           transparent: true,
           depthWrite: false,
@@ -2483,15 +2480,15 @@ export const HeroEntremetCake: React.FC<HeroEntremetCakeProps> = ({
               sliceYaw={sliceYaw}
             />
 
-            {/* 半裸抹面仅在未爆炸合体态贴附蛋糕侧壁 */}
+            {/* 半裸抹面仅在未爆炸合体态贴附蛋糕侧壁（关闭半透明外壳 receiveShadow 消除柱面阴影摩尔竖纹） */}
             {eAnim <= 0.06 &&
               (!isSplit ? (
-                <mesh geometry={geos.semiNakedFullGeo} material={materials.semiNakedCoatMat} receiveShadow />
+                <mesh geometry={geos.semiNakedFullGeo} material={materials.semiNakedCoatMat} />
               ) : (
                 <>
-                  <mesh geometry={geos.semiNakedMainGeo} material={materials.semiNakedCoatMat} receiveShadow />
+                  <mesh geometry={geos.semiNakedMainGeo} material={materials.semiNakedCoatMat} />
                   <group position={sliceOffset} rotation={[0, sliceYaw, 0]}>
-                    <mesh geometry={geos.semiNakedSliceGeo} material={materials.semiNakedCoatMat} receiveShadow />
+                    <mesh geometry={geos.semiNakedSliceGeo} material={materials.semiNakedCoatMat} />
                   </group>
                 </>
               ))}

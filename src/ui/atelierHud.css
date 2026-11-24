@@ -64,7 +64,7 @@
 }
 
 /* ==========================================================================
-   1. DIRECTION-B SLIM PARCHMENT TOP BAR + DRAWERS + FLOATING CAMERA DOCK
+   1. STORYBOOK JOURNAL HYBRID TOP BAR + INTEGRATED CAMERA BOOKMARK + DRAWERS
    ========================================================================== */
 .hud-top-scope {
   pointer-events: none;
@@ -79,8 +79,8 @@
   top: max(10px, env(safe-area-inset-top));
   left: max(14px, env(safe-area-inset-left));
   right: max(14px, env(safe-area-inset-right));
-  height: 54px;
-  padding: 0 10px 0 12px;
+  min-height: 54px;
+  padding: 6px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -88,29 +88,29 @@
   background: var(--salon-veil-top);
   backdrop-filter: blur(12px) saturate(1.06);
   -webkit-backdrop-filter: blur(12px) saturate(1.06);
-  border: 1.5px solid rgba(156, 116, 72, 0.52);
-  border-radius: 999px;
+  border: 1.5px solid rgba(156, 116, 72, 0.54);
+  border-radius: 15px;
   box-shadow:
-    0 3px 0 rgba(128, 92, 52, 0.2),
-    0 10px 26px rgba(62, 40, 22, 0.13),
-    inset 0 1px 0 rgba(255, 253, 246, 0.92);
+    0 3px 0 rgba(128, 92, 52, 0.22),
+    0 10px 26px rgba(62, 40, 22, 0.14),
+    inset 0 1px 0 rgba(255, 253, 246, 0.94);
 }
 
 .hud-herbarium-corner {
   position: absolute;
   pointer-events: none;
-  opacity: 0.52;
+  opacity: 0.62;
   z-index: 1;
 }
 
 .hud-herbarium-corner.tl {
   top: 2px;
-  left: 6px;
+  left: 3px;
 }
 
 .hud-herbarium-corner.tr {
   top: 2px;
-  right: 6px;
+  right: 3px;
   transform: scaleX(-1);
 }
 
@@ -118,29 +118,48 @@
   content: '';
   position: absolute;
   inset: 3px;
-  border: 1px dashed rgba(108, 138, 96, 0.3);
-  border-radius: 999px;
+  border: 1px dashed rgba(108, 138, 96, 0.34);
+  border-radius: 11px;
   pointer-events: none;
 }
 
-.hud-top-left-cluster {
+.hud-top-brand-row {
+  position: relative;
+  z-index: 2;
+  display: contents;
+}
+
+.hud-top-ribbon-row {
   position: relative;
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
+  gap: 8px;
   flex: 1 1 auto;
+  justify-content: flex-start;
+  min-width: 0;
 }
 
 .hud-brand-compact {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+  order: 1;
+}
+
+.hud-brand-titles {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.12;
 }
 
 .hud-title-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-editorial-serif);
   font-size: clamp(14px, 1.2vw, 16px);
   font-weight: 700;
@@ -151,24 +170,106 @@
   white-space: nowrap;
 }
 
+.hud-title-flourish {
+  font-size: 9.5px;
+  color: var(--salon-gold);
+  opacity: 0.9;
+}
+
+.hud-subtitle-compact {
+  font-family: var(--font-tech-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: #8b683b;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+.hud-top-ribbon-row {
+  order: 2;
+}
+
+.hud-top-right-actions {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  order: 3;
+}
+
+.topbar-flavor-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: rgba(235, 220, 194, 0.44);
+  border: 1px solid rgba(156, 116, 72, 0.28);
+}
+
+.topbar-mobile-flavor-strip {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(235, 220, 194, 0.44);
+  border: 1px solid rgba(156, 116, 72, 0.28);
+  flex-shrink: 0;
+}
+
+.topbar-flavor-dot {
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  background: rgba(255, 252, 244, 0.8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.14s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.topbar-flavor-dot:hover {
+  transform: scale(1.08);
+  border-color: var(--salon-gold);
+}
+
+.topbar-flavor-dot.active {
+  border-color: var(--salon-charcoal);
+  background: #fffdf8;
+  box-shadow: 0 0 0 2px rgba(190, 138, 60, 0.28);
+}
+
+.topbar-flavor-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(71, 49, 32, 0.28);
+}
+
 .topbar-step-trigger {
   cursor: pointer;
   position: relative;
   z-index: 2;
-  height: 40px;
-  min-height: 40px;
+  height: 36px;
+  min-height: 36px;
   max-width: 100%;
-  padding: 0 12px 0 8px;
-  border-radius: 999px;
+  padding: 0 11px 0 6px;
+  border-radius: 10px;
   border: 1px solid rgba(156, 116, 72, 0.42);
   background: linear-gradient(180deg, #fffdf8 0%, #f5ead4 100%);
   box-shadow: 0 1.5px 0 rgba(128, 92, 52, 0.18);
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   color: var(--salon-charcoal);
   font-family: var(--font-clean-sans);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   white-space: nowrap;
   min-width: 0;
@@ -189,13 +290,13 @@
 }
 
 .tst-badge {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
   background: linear-gradient(180deg, #7a5434 0%, #5e3e23 100%);
   color: #fdf7e9;
   font-family: var(--font-editorial-serif);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -214,11 +315,11 @@
 }
 
 .tst-progress {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #825a1d;
-  padding: 2px 7px;
-  border-radius: 999px;
+  padding: 1px 6px;
+  border-radius: 6px;
   background: rgba(190, 138, 60, 0.14);
   border: 1px solid rgba(190, 138, 60, 0.28);
   flex-shrink: 0;
@@ -233,23 +334,14 @@
   transform: rotate(180deg);
 }
 
-.hud-top-right-actions {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
 .topbar-circle-btn {
   cursor: pointer;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  min-height: 40px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
   padding: 0;
-  border-radius: 50%;
+  border-radius: 10px;
   border: 1px solid rgba(156, 116, 72, 0.42);
   background: linear-gradient(180deg, #fffdf8 0%, #f3e6cc 100%);
   color: var(--salon-charcoal);
@@ -519,38 +611,30 @@
   background: rgba(188, 80, 77, 0.15);
 }
 
-/* 右侧悬浮机位胶囊 */
-.hud-cam-dock {
-  pointer-events: auto;
-  position: fixed;
-  top: 72px;
-  right: max(14px, env(safe-area-inset-right));
-  z-index: 34;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-}
-
+/* 顶栏右侧集成黄铜罗盘机位书签与下拉菜单 */
 .cam-dock-trigger {
   cursor: pointer;
-  min-height: 38px;
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: var(--salon-veil-top);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(156, 116, 72, 0.48);
-  box-shadow: 0 3px 0 rgba(128, 92, 52, 0.18), 0 8px 20px rgba(58, 38, 22, 0.12);
+  margin-left: auto;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fdf4dd 0%, #efe0be 100%);
+  border: 1px solid rgba(156, 116, 72, 0.48);
+  box-shadow: 0 1.5px 0 rgba(128, 92, 52, 0.18);
   color: var(--salon-charcoal);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: transform 0.14s ease, border-color 0.15s ease;
+}
+
+.cam-dock-trigger:hover {
+  border-color: var(--salon-gold);
 }
 
 .cam-dock-trigger.gold-accent {
@@ -561,19 +645,25 @@
 
 .cam-dock-trigger.open {
   border-color: var(--salon-gold);
+  box-shadow: 0 0 0 2px rgba(190, 138, 60, 0.22);
 }
 
 .cam-dock-list {
+  pointer-events: auto;
+  position: fixed;
+  top: 72px;
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 42;
   display: flex;
   flex-direction: column;
   gap: 5px;
   padding: 8px;
   border-radius: 15px;
-  background: rgba(252, 247, 236, 0.96);
+  background: rgba(252, 247, 236, 0.97);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(156, 116, 72, 0.48);
-  box-shadow: 0 12px 28px rgba(48, 30, 16, 0.18);
+  border: 1.5px solid rgba(156, 116, 72, 0.52);
+  box-shadow: 0 4px 0 rgba(124, 88, 48, 0.2), 0 14px 32px rgba(48, 30, 16, 0.2);
   animation: drawerDropIn 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -730,6 +820,34 @@
 .console-micro-tip {
   font-size: 11px;
   color: var(--salon-charcoal-soft);
+}
+
+.console-cert-badge {
+  display: none;
+  cursor: pointer;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(156, 116, 72, 0.42);
+  background: rgba(255, 250, 238, 0.88);
+  color: #8b683b;
+  font-family: var(--font-tech-mono);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.console-cert-badge.ready {
+  background: linear-gradient(180deg, #d39b48 0%, #b77e2e 100%);
+  border-color: #8f601f;
+  color: #fffdf6;
+  animation: certReadyPulse 2.1s ease-in-out infinite;
+}
+
+.console-cert-badge:disabled {
+  opacity: 0.72;
+  cursor: default;
 }
 
 .stage-action-row {
@@ -1887,10 +2005,10 @@
   .hud-easter-egg-toast {
     top: 74px;
   }
-  /* 平板视口将右下仪表盘微标移至右上悬浮机位下方，保持底栏完全居中 */
+  /* 平板视口将右下仪表盘微标置于顶栏右下方，保持底栏完全居中 */
   .atelier-telemetry-panel,
   .micro-telemetry-pill {
-    top: 118px;
+    top: 76px;
     right: 14px;
     bottom: auto;
   }
@@ -1987,87 +2105,171 @@
 }
 
 /* ==========================================================================
-   手机竖屏专属适配（宽 <= 640px，方向 B 单条顶栏 + 右侧悬浮机位胶囊，释放顶部视野）
+   手机竖屏专属适配（宽 <= 640px，手账绘本双段轻量顶栏 + 瘦身食谱底栏，全露中景茶叙）
    ========================================================================== */
 @media (max-width: 640px) {
   .hud-topbar {
-    top: max(8px, env(safe-area-inset-top));
+    top: max(6px, env(safe-area-inset-top));
     left: max(8px, env(safe-area-inset-left));
     right: max(8px, env(safe-area-inset-right));
-    height: 52px;
-    padding: 0 7px 0 8px;
-    gap: 6px;
+    min-height: auto;
+    padding: 5px 9px 6px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    border-radius: 13px;
   }
   .hud-herbarium-corner {
     display: none;
   }
-  .hud-top-left-cluster {
-    gap: 7px;
+  .hud-top-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed rgba(156, 116, 72, 0.28);
   }
-  /* 窄屏保留洋甘菊店徽，收起过长店名文本，将空间让给可点击步骤胶囊 */
+  .hud-brand-compact {
+    order: initial;
+    gap: 6px;
+    min-width: 0;
+  }
+  .hud-crest-wrap {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+  }
   .hud-title-compact {
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    gap: 3px;
+  }
+  .hud-subtitle-compact {
     display: none;
   }
-  .topbar-step-trigger {
-    height: 40px;
-    padding: 0 10px 0 6px;
-    font-size: 12.5px;
-    gap: 6px;
-  }
   .hud-top-right-actions {
-    gap: 6px;
+    order: initial;
+    gap: 5px;
+  }
+  .topbar-flavor-pills {
+    display: none;
+  }
+  .topbar-circle-btn {
+    width: 29px;
+    height: 29px;
+    min-width: 29px;
+    min-height: 29px;
+    border-radius: 8px;
+  }
+  .topbar-circle-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .hud-top-ribbon-row {
+    order: initial;
+    width: 100%;
+    justify-content: space-between;
+    gap: 5px;
+  }
+  .topbar-step-trigger {
+    height: 31px;
+    min-height: 31px;
+    padding: 0 7px 0 4px;
+    font-size: 11.5px;
+    gap: 4px;
+    border-radius: 8px;
+    flex: 1 1 auto;
+  }
+  .tst-badge {
+    width: 19px;
+    height: 19px;
+    font-size: 10px;
+    border-radius: 5px;
+  }
+  .tst-progress {
+    font-size: 9.5px;
+    padding: 1px 4px;
+  }
+  .topbar-mobile-flavor-strip {
+    display: inline-flex;
+  }
+  .cam-dock-trigger {
+    margin-left: 0;
+    height: 31px;
+    min-height: 31px;
+    padding: 0 8px;
+    font-size: 11px;
+    border-radius: 8px;
+    gap: 4px;
   }
   .topbar-drawer-panel {
     width: calc(100vw - 16px);
     left: max(8px, env(safe-area-inset-left)) !important;
     right: max(8px, env(safe-area-inset-right)) !important;
   }
-  .hud-cam-dock {
+  .cam-dock-list {
     right: max(8px, env(safe-area-inset-right));
   }
   .hud-bottom-console {
-    bottom: max(8px, env(safe-area-inset-bottom));
+    bottom: max(7px, env(safe-area-inset-bottom));
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
-    padding: 8px 12px 10px;
-    gap: 6px;
-    border-radius: 14px;
+    padding: 7px 10px 8px;
+    gap: 5px;
+    border-radius: 13px;
+    background: rgba(252, 247, 236, 0.90);
+  }
+  .mobile-touch-hint {
+    display: none !important;
   }
   .console-micro-meta {
-    justify-content: space-between;
+    justify-content: flex-start;
     font-size: 11px;
     gap: 6px;
   }
   .console-micro-stage {
-    font-size: 13.5px;
+    font-size: 12.5px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .console-cert-badge {
+    display: inline-flex;
+  }
+  .step7-compact-flavors,
+  .step7-desktop-cert-btn {
+    display: none !important;
   }
   .stage-action-row {
     width: 100%;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
   }
   .mono-readout-chip {
     width: 100%;
     justify-content: center;
-    padding: 5px 10px;
-    font-size: 11px;
+    padding: 4px 8px;
+    font-size: 10.5px;
   }
   .hud-bottom-console .couture-btn {
-    min-height: 34px;
-    padding: 6px 14px;
-    font-size: 12px;
-    flex: 1 1 auto;
+    min-height: 32px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    flex: 1 1 0;
   }
   .j-fold-canvas-pad {
     width: 100%;
     justify-content: center;
-    min-height: 38px;
-    padding: 5px 14px;
+    min-height: 36px;
+    padding: 4px 12px;
   }
   .explode-slider-group {
     width: 100%;
     justify-content: center;
+    padding: 3px 8px;
   }
   .explode-callouts-layer .layer-callout-item {
     padding: 2px 5px;
@@ -2110,40 +2312,54 @@
     top: max(5px, env(safe-area-inset-top));
     left: max(10px, env(safe-area-inset-left));
     right: max(10px, env(safe-area-inset-right));
+    min-height: 42px;
     height: 42px;
     padding: 0 8px;
+    flex-direction: row;
+    align-items: center;
     gap: 6px;
+    border-radius: 12px;
+  }
+  .hud-top-brand-row {
+    display: contents;
   }
   .hud-herbarium-corner,
   .hud-title-compact,
+  .hud-subtitle-compact,
+  .topbar-flavor-pills,
+  .topbar-mobile-flavor-strip,
   .atelier-telemetry-panel,
   .micro-telemetry-pill,
   .console-micro-meta,
   .console-progress-track {
     display: none;
   }
+  .hud-top-ribbon-row {
+    order: 2;
+    gap: 6px;
+  }
   .topbar-step-trigger {
-    height: 32px;
-    min-height: 32px;
+    height: 30px;
+    min-height: 30px;
     font-size: 11.5px;
-    padding: 0 10px 0 6px;
+    padding: 0 9px 0 5px;
   }
   .tst-badge {
-    width: 20px;
-    height: 20px;
+    width: 19px;
+    height: 19px;
     font-size: 10px;
   }
   .topbar-circle-btn {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
   }
   .cam-dock-trigger {
-    min-height: 32px;
-    height: 32px;
+    min-height: 30px;
+    height: 30px;
     font-size: 11px;
-    padding: 0 10px;
+    padding: 0 9px;
   }
   .topbar-drawer-panel {
     max-height: calc(100dvh - 105px);

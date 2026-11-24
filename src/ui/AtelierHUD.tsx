@@ -486,10 +486,8 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
   const [bgmEnabled, setBgmEnabled] = useState(() => patisserieAudio.isBgmEnabled());
   const [bgmTrack, setBgmTrack] = useState<BgmTrackId>(() => patisserieAudio.getBgmTrack());
   const [bgmVolume, setBgmVolume] = useState(() => patisserieAudio.getBgmVolume());
-  const [topDrawerTab, setTopDrawerTab] = useState<'none' | 'steps' | 'settings'>('none');
-  const [camDrawerOpen, setCamDrawerOpen] = useState(false);
+  const [topDrawerTab, setTopDrawerTab] = useState<'none' | 'steps' | 'settings' | 'camera'>('none');
   const topOverlayScopeRef = useRef<HTMLDivElement | null>(null);
-  const camDockRef = useRef<HTMLDivElement | null>(null);
   const [photoMode, setPhotoMode] = useState(false);
   const [easterToast, setEasterToast] = useState<{ icon: string; message: string } | null>(null);
   const [discoveredEggs, setDiscoveredEggs] = useState<string[]>([]);
@@ -535,9 +533,6 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
       if (topOverlayScopeRef.current && !topOverlayScopeRef.current.contains(target)) {
         setTopDrawerTab('none');
       }
-      if (camDockRef.current && !camDockRef.current.contains(target)) {
-        setCamDrawerOpen(false);
-      }
     };
     window.addEventListener('pointerdown', onOutsideClick);
 
@@ -573,7 +568,6 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === 'Escape') {
         setTopDrawerTab('none');
-        setCamDrawerOpen(false);
       } else if (e.key >= '1' && e.key <= '7') {
         patisserieAudio.playSoftUiTick();
         setTopDrawerTab('none');
@@ -583,7 +577,7 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
         setPhotoMode((prev) => !prev);
       } else if (e.key === 'g' || e.key === 'G') {
         patisserieAudio.playSoftUiTick();
-        setCamDrawerOpen(false);
+        setTopDrawerTab('none');
         setCameraOverride(cameraOverride === 'atelier_grand' ? 'station' : 'atelier_grand');
       }
     };
@@ -846,7 +840,6 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
   const resetHudTransientState = useCallback(() => {
     setPhotoMode(false);
     setTopDrawerTab('none');
-    setCamDrawerOpen(false);
     setEasterToast(null);
     setDiscoveredEggs([]);
     if (easterTimerRef.current !== null) {
@@ -1199,21 +1192,84 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
       )}
 
       {/* ====================================================================
-          2. DIRECTION-B SLIM TOP BAR + COLLAPSIBLE DRAWERS + FLOATING CAMERA DOCK
+          2. STORYBOOK JOURNAL HYBRID TOP BAR + INTEGRATED CAMERA BOOKMARK + DRAWERS
          ==================================================================== */}
       <div className="hud-top-scope" ref={topOverlayScopeRef}>
         <header ref={topbarRef} className="hud-topbar">
           <SvgCornerSprig className="hud-herbarium-corner tl" />
           <SvgCornerSprig className="hud-herbarium-corner tr" />
 
-          <div className="hud-top-left-cluster">
+          <div className="hud-top-brand-row">
             <div className="hud-brand-compact">
               <span className="hud-crest-wrap">
                 <SvgChamomileCrest />
               </span>
-              <span className="hud-title-compact">林间花房烘焙小屋</span>
+              <div className="hud-brand-titles">
+                <span className="hud-title-compact">
+                  <span className="hud-title-flourish" aria-hidden="true">✦</span>
+                  <span>林间花房烘焙小屋</span>
+                  <span className="hud-title-flourish" aria-hidden="true">✦</span>
+                </span>
+                <span className="hud-subtitle-compact">ATELIER PÂTISSERIE · 南法手账工坊</span>
+              </div>
             </div>
 
+            <div className="hud-top-right-actions">
+              <div className="topbar-flavor-pills" role="group" aria-label="快速风味切换">
+                {FLAVOR_ORDER.map((fid) => {
+                  const item = COUTURE_FLAVORS[fid];
+                  const active = selectedFlavor === fid;
+                  return (
+                    <button
+                      key={fid}
+                      type="button"
+                      className={`topbar-flavor-dot ${active ? 'active' : ''}`}
+                      onClick={() => handleFlavorSelect(fid)}
+                      title={`${item.nameCn} · ${item.nameFr}`}
+                      aria-label={item.nameCn}
+                      aria-pressed={active}
+                    >
+                      <span
+                        className="topbar-flavor-swatch"
+                        style={{ backgroundColor: item.swatchHex }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                className="topbar-circle-btn"
+                onClick={() => {
+                  patisserieAudio.playSoftUiTick();
+                  setTopDrawerTab('none');
+                  setPhotoMode(true);
+                }}
+                title="进入纯净摄影模式 (P)"
+                aria-label="进入纯净摄影模式"
+              >
+                <SvgCameraFrame />
+              </button>
+
+              <button
+                type="button"
+                className={`topbar-circle-btn ${topDrawerTab === 'settings' ? 'active' : ''}`}
+                onClick={() => {
+                  void patisserieAudio.unlock();
+                  patisserieAudio.playSoftUiTick();
+                  setTopDrawerTab((prev) => (prev === 'settings' ? 'none' : 'settings'));
+                }}
+                title="风味切换与工坊音画设置"
+                aria-label="风味与工坊设置"
+                aria-expanded={topDrawerTab === 'settings'}
+              >
+                <SvgSlidersGear />
+              </button>
+            </div>
+          </div>
+
+          <div className="hud-top-ribbon-row">
             <button
               type="button"
               className={`topbar-step-trigger ${topDrawerTab === 'steps' ? 'open' : ''}`}
@@ -1221,7 +1277,6 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
               aria-label={`当前第${cfg.roman}步 ${STEP_SHORT_TITLES[currentStep]}，点击展开七步进度`}
               onClick={() => {
                 patisserieAudio.playSoftUiTick();
-                setCamDrawerOpen(false);
                 setTopDrawerTab((prev) => (prev === 'steps' ? 'none' : 'steps'));
               }}
             >
@@ -1232,38 +1287,48 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
               <span className="tst-progress mono">{completedCount}/7</span>
               <SvgChevronDown rotated={topDrawerTab === 'steps'} />
             </button>
-          </div>
 
-          <div className="hud-top-right-actions">
+            <div className="topbar-mobile-flavor-strip" role="group" aria-label="快捷风味">
+              {FLAVOR_ORDER.map((fid) => {
+                const item = COUTURE_FLAVORS[fid];
+                const active = selectedFlavor === fid;
+                return (
+                  <button
+                    key={fid}
+                    type="button"
+                    className={`topbar-flavor-dot ${active ? 'active' : ''}`}
+                    onClick={() => handleFlavorSelect(fid)}
+                    title={`${item.nameCn} · ${item.nameFr}`}
+                    aria-label={item.nameCn}
+                    aria-pressed={active}
+                  >
+                    <span
+                      className="topbar-flavor-swatch"
+                      style={{ backgroundColor: item.swatchHex }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
             <button
               type="button"
-              className="topbar-circle-btn"
+              className={`cam-dock-trigger ${topDrawerTab === 'camera' ? 'open' : ''} ${
+                cameraOverride === 'tea_tasting' ? 'gold-accent' : ''
+              }`}
+              aria-expanded={topDrawerTab === 'camera'}
+              aria-label="切换场景视角机位"
               onClick={() => {
                 patisserieAudio.playSoftUiTick();
-                setTopDrawerTab('none');
-                setCamDrawerOpen(false);
-                setPhotoMode(true);
+                setTopDrawerTab((prev) => (prev === 'camera' ? 'none' : 'camera'));
               }}
-              title="进入纯净摄影模式 (P)"
-              aria-label="进入纯净摄影模式"
             >
-              <SvgCameraFrame />
-            </button>
-
-            <button
-              type="button"
-              className={`topbar-circle-btn ${topDrawerTab === 'settings' ? 'active' : ''}`}
-              onClick={() => {
-                void patisserieAudio.unlock();
-                patisserieAudio.playSoftUiTick();
-                setCamDrawerOpen(false);
-                setTopDrawerTab((prev) => (prev === 'settings' ? 'none' : 'settings'));
-              }}
-              title="风味切换与工坊音画设置"
-              aria-label="风味与工坊设置"
-              aria-expanded={topDrawerTab === 'settings'}
-            >
-              <SvgSlidersGear />
+              <SvgCompassPin />
+              <span>
+                视角 ·{' '}
+                {CAMERA_VIEW_OPTIONS.find((opt) => opt.id === cameraOverride)?.label ?? '品鉴'}
+              </span>
+              <SvgChevronDown rotated={topDrawerTab === 'camera'} />
             </button>
           </div>
         </header>
@@ -1272,7 +1337,7 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
         {topDrawerTab === 'steps' && (
           <nav
             className="topbar-drawer-panel steps-drawer"
-            style={{ top: `${Math.max(60, topbarBottomPx + 8)}px` }}
+            style={{ top: `${Math.max(54, topbarBottomPx + 8)}px` }}
             aria-label="七步手作烘焙工序"
           >
             <div className="drawer-section-head">
@@ -1312,7 +1377,7 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
         {topDrawerTab === 'settings' && (
           <div
             className="topbar-drawer-panel settings-drawer"
-            style={{ top: `${Math.max(60, topbarBottomPx + 8)}px` }}
+            style={{ top: `${Math.max(54, topbarBottomPx + 8)}px` }}
             role="dialog"
             aria-label="风味切换与工坊设置"
           >
@@ -1473,37 +1538,15 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
             </button>
           </div>
         )}
-      </div>
 
-      {/* 右侧悬浮机位胶囊（仅保留当前视角胶囊，点开竖排选择） */}
-      <div
-        ref={camDockRef}
-        className="hud-cam-dock"
-        style={{ top: `${Math.max(60, topbarBottomPx + 8)}px` }}
-      >
-        <button
-          type="button"
-          className={`cam-dock-trigger ${camDrawerOpen ? 'open' : ''} ${
-            cameraOverride === 'tea_tasting' ? 'gold-accent' : ''
-          }`}
-          aria-expanded={camDrawerOpen}
-          aria-label="切换场景视角机位"
-          onClick={() => {
-            patisserieAudio.playSoftUiTick();
-            setTopDrawerTab('none');
-            setCamDrawerOpen((prev) => !prev);
-          }}
-        >
-          <SvgCompassPin />
-          <span>
-            视角 ·{' '}
-            {CAMERA_VIEW_OPTIONS.find((opt) => opt.id === cameraOverride)?.label ?? '品鉴'}
-          </span>
-          <SvgChevronDown rotated={camDrawerOpen} />
-        </button>
-
-        {camDrawerOpen && (
-          <div className="cam-dock-list" role="menu" aria-label="场景机位菜单">
+        {/* 抽屉 C：场景机位选单（对齐顶栏右上黄铜罗盘书签） */}
+        {topDrawerTab === 'camera' && (
+          <div
+            className="cam-dock-list"
+            style={{ top: `${Math.max(54, topbarBottomPx + 8)}px` }}
+            role="menu"
+            aria-label="场景机位菜单"
+          >
             {CAMERA_VIEW_OPTIONS.map((opt) => {
               const active = cameraOverride === opt.id;
               return (
@@ -1519,7 +1562,7 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
                   onClick={() => {
                     patisserieAudio.playSoftUiTick();
                     setCameraOverride(opt.id);
-                    setCamDrawerOpen(false);
+                    setTopDrawerTab('none');
                   }}
                 >
                   {opt.label}
@@ -1609,6 +1652,26 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
                 ? `已合格 · ${stepScores[currentStep]}分`
                 : '手作中'}
           </span>
+          {currentStep === 7 && (
+            <button
+              type="button"
+              className={`console-cert-badge ${allStepsPassed ? 'ready' : ''}`}
+              disabled={!allStepsPassed}
+              title={
+                allStepsPassed
+                  ? '颁授林间花房手作赏味证书'
+                  : `需完成全部 7 道工序实操考核后方可颁授证书 (${completedCount}/7)`
+              }
+              onClick={() => {
+                if (!allStepsPassed) return;
+                patisserieAudio.playSoftUiTick();
+                setCertificateModalOpen(true);
+              }}
+            >
+              <SvgRibbonStar />
+              <span>{allStepsPassed ? '赏味证书' : `证书 ${completedCount}/7`}</span>
+            </button>
+          )}
           <span className="console-micro-tip">· {getStepMicroGuide(currentStep, mechanics)}</span>
         </div>
 
@@ -2085,7 +2148,7 @@ export const AtelierHUD: React.FC<AtelierHUDProps> = ({
 
               <button
                 type="button"
-                className={`couture-btn next-gold ${certReadyToInspect ? 'cert-ready-pulse' : ''}`}
+                className={`couture-btn next-gold step7-desktop-cert-btn ${certReadyToInspect ? 'cert-ready-pulse' : ''}`}
                 disabled={!allStepsPassed}
                 title={
                   allStepsPassed

@@ -1548,21 +1548,21 @@ export const InteractiveStages3D: React.FC = () => {
       enhanceWithStylizedFresnelRim(
         enhanceWithExtremeMicroCraft(
           new THREE.MeshPhysicalMaterial({
-            color: '#D87D50',
-            metalness: 0.90,
-            roughness: 0.28,
+            color: '#DC8154',
+            metalness: 0.88,
+            roughness: 0.25,
             normalMap: textures.hammeredCopperNormalMap,
-            normalScale: new THREE.Vector2(0.32, 0.32),
-            clearcoat: 0.14,
-            clearcoatRoughness: 0.36,
+            normalScale: new THREE.Vector2(0.50, 0.50),
+            clearcoat: 0.16,
+            clearcoatRoughness: 0.30,
             iridescence: 0.06,
             iridescenceIOR: 1.36,
-            envMapIntensity: 0.42,
+            envMapIntensity: 0.56,
             side: THREE.DoubleSide,
           }),
-          { boxProjectedIBL: true, detailKind: 'brushed_metal', detailStrength: 0.12, cacheTag: 'stage-copper-v2' }
+          { boxProjectedIBL: true, detailKind: 'brushed_metal', detailStrength: 0.14, cacheTag: 'stage-copper-v3' }
         ),
-        { rimColor: '#FFE4B0', rimStrength: 0.30, rimPower: 2.6, topBias: 0.44, cacheTag: 'stage-copper-rim-v1' }
+        { rimColor: '#FFE8BA', rimStrength: 0.34, rimPower: 2.5, topBias: 0.46, cacheTag: 'stage-copper-rim-v2' }
       ),
     [textures]
   );
@@ -2995,6 +2995,12 @@ export const InteractiveStages3D: React.FC = () => {
           </>
         )}
 
+        {/* 铜碗底座与桌布间的柔和接触阴影垫圈，增强实体贴合厚重感 */}
+        <mesh position={[0, 0.0006, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+          <ringGeometry args={[0.04, 0.178, 40]} />
+          <meshBasicMaterial color="#3B2412" transparent opacity={0.16} depthWrite={false} />
+        </mesh>
+
         <group ref={step1BowlSpringRef}>
           <group ref={step1BowlVisualRef}>
             <mesh
@@ -3091,6 +3097,25 @@ export const InteractiveStages3D: React.FC = () => {
                   side={THREE.DoubleSide}
                 />
               </mesh>
+              {/* 铜筛内部蓬松待过筛杏仁糖粉层：底缘严丝合缝嵌入 y=-0.019 筛网，呈现柔和微隆起的待筛粉丘 */}
+              {siftProgress < 0.96 && (() => {
+                const scaleY = 0.20 * Math.max(0.12, 1 - siftProgress);
+                const sphereR = 0.118;
+                const thetaMax = Math.PI * 0.34;
+                const baseLocalY = sphereR * Math.cos(thetaMax) * scaleY;
+                const rXZ = 1 - siftProgress * 0.10;
+                return (
+                  <mesh
+                    position={[0, -0.0195 - baseLocalY, 0]}
+                    scale={[rXZ, scaleY, rXZ]}
+                    material={siftMoundMat}
+                    receiveShadow
+                    raycast={() => null}
+                  >
+                    <sphereGeometry args={[sphereR, 32, 16, 0, Math.PI * 2, 0, thetaMax]} />
+                  </mesh>
+                );
+              })()}
             </group>
             <points ref={flourSnowRef} geometry={flourSnowGeo} raycast={() => null}>
               <pointsMaterial
@@ -3152,9 +3177,9 @@ export const InteractiveStages3D: React.FC = () => {
             />
           </group>
         </group>
-        {/* 第1步铜筛与硅胶翻拌铲上方漂浮引导小图标 */}
+        {/* 第1步铜筛与硅胶翻拌铲右上侧轻柔微标（移出正中央不遮挡铜碗面粉画面） */}
         <FloatingPropGuideBadge
-          position={siftProgress < 0.99 ? [0, 0.245, 0] : [0.06, 0.22, 0.04]}
+          position={siftProgress < 0.99 ? [0.142, 0.175, 0.035] : [0.225, 0.115, 0.055]}
           visible={currentStep === 1 && !stepFailures[1] && (siftProgress < 0.99 || jFoldCount < 3)}
           hovered={hoveredPropKey === 'step1_sieve' || hoveredPropKey === 'step1_spatula' || hoveredPropKey === 'step1_bowl'}
           variant="drag"

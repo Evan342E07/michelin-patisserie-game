@@ -2041,7 +2041,7 @@ function buildSwirledChantillyCrownSplit(fullSegs = 120): SplitLayerGeometries {
 }
 
 function buildSemiNakedCoatWall(thetaStart: number, thetaLength: number, segs: number, weld: boolean): THREE.BufferGeometry {
-  const r = 0.4465;
+  const r = 0.4482;
   const yMin = 0.004;
   const yMax = 0.3065;
   const hSegs = 24;

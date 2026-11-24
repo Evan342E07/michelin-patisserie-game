@@ -470,7 +470,7 @@ export interface FloatingPropGuideBadgeProps {
   variant?: 'drag' | 'tap' | 'dial' | 'knife';
 }
 
-const BADGE_BASE_SCALE = 0.76;
+const BADGE_BASE_SCALE = 0.50;
 
 export const FloatingPropGuideBadge: React.FC<FloatingPropGuideBadgeProps> = ({
   position,
@@ -489,7 +489,7 @@ export const FloatingPropGuideBadge: React.FC<FloatingPropGuideBadgeProps> = ({
       new THREE.MeshBasicMaterial({
         color: '#E6D5BA',
         transparent: true,
-        opacity: 0.86,
+        opacity: 0.68,
       }),
     []
   );
@@ -498,7 +498,7 @@ export const FloatingPropGuideBadge: React.FC<FloatingPropGuideBadgeProps> = ({
       new THREE.MeshBasicMaterial({
         color: '#DFA334',
         transparent: true,
-        opacity: 0.88,
+        opacity: 0.74,
       }),
     []
   );
